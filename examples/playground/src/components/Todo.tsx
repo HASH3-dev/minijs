@@ -60,8 +60,8 @@ export class Todo extends Component {
 
   render() {
     return (
-      <main class="flex flex-col gap-10 items-center pt-10">
-        <h1 class="text-3xl font-bold">todo list</h1>
+      <main class="flex flex-col gap-10 items-center">
+        <h1 class="text-3xl font-bold self-start">Todo List</h1>
 
         <div className="flex gap-2 items-center">
           <input

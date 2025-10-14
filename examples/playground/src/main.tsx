@@ -5,6 +5,5 @@ import { Home } from "./view/Home";
 import { Alert } from "./components/Alert";
 
 // Create application with two-phase rendering (fixes DI issues)
-// const application = new Application(<App />);
-const application = new Application(<Home />);
+const application = new Application(<App />);
 application.mount("#app");
