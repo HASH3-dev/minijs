@@ -31,6 +31,27 @@ export class Todo extends Component {
 
     const prev = unwrap(this.list);
     this.list.next([...prev, item]);
+    this.text.next("");
+  }
+
+  removeItem(id: string) {
+    const prev = unwrap(this.list);
+    const updated = prev.filter((item) => item.id !== id);
+    this.list.next(updated);
+  }
+
+  checkItem(id: string) {
+    const prev = unwrap(this.list);
+    const updated = prev.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          done: !item.done,
+        };
+      }
+      return item;
+    });
+    this.list.next(updated);
   }
 
   setText(text: string) {
@@ -58,13 +79,31 @@ export class Todo extends Component {
           </button>
         </div>
 
-        <ul class="flex flex-col gap-2">
+        <ul class="flex flex-col gap-2 max-w-80 w-full">
+          {this.list.pipe(
+            map((list) =>
+              list.length === 0 ? <span>You don't have any items.</span> : null
+            )
+          )}
+
           {this.list.pipe(
             map((list) =>
               list.map((item) => (
-                <li class="flex items-center gap-2">
-                  <input type="checkbox" checked={item.done} />
-                  <span>{item.text}</span>
+                <li class="flex bg-slate-100 items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 w-full">
+                  <input
+                    type="checkbox"
+                    checked={item.done}
+                    onChange={() => this.checkItem(item.id)}
+                  />
+                  <span class={item.done ? "line-through" : ""}>
+                    {item.text}
+                  </span>
+                  <button
+                    onClick={() => this.removeItem(item.id)}
+                    class="ml-auto cursor-pointer text-red-500 hover:text-red-600"
+                  >
+                    x
+                  </button>
                 </li>
               ))
             )
