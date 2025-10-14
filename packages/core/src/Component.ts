@@ -20,6 +20,19 @@ export abstract class Component<P extends Record<string, any> = {}> {
     this.__injector_storage = value;
   }
 
+  /**
+   * Public accessor for the injector
+   * Allows components to manually get dependencies
+   */
+  get injector(): any | undefined {
+    // Try own injector first
+    if (this.__mini_injector) {
+      return this.__mini_injector;
+    }
+    // Fallback to parent injector
+    return this.__getParentInjector();
+  }
+
   // Parent component reference (set by JSX runtime)
   __parent_component?: Component;
 

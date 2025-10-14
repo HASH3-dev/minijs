@@ -1,6 +1,7 @@
 /** A Counter component using @mini/jsx reactive islands */
 import { Component, Mount, signal, unwrap } from "@mini/core";
 import { Observable } from "rxjs";
+import { Todo } from "./Todo";
 
 /**
  * This component returns JSX built with the @mini/jsx runtime.
@@ -60,6 +61,9 @@ export class CounterJSX extends Component<{ name: Observable<string> }> {
           <p class="text-sm font-medium text-slate-700">
             User: <span class="text-indigo-600">{this.props.name}</span>
           </p>
+        </div>
+        <div class="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+          <Todo />
         </div>
       </section>
     );

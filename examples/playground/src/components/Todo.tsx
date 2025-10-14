@@ -9,7 +9,6 @@ type TodoItem = {
   done: boolean;
 };
 
-@Provide([AlertService])
 export class Todo extends Component {
   @Inject(AlertService) alertService!: AlertService;
 

@@ -6,7 +6,10 @@ import { Header } from "./components/Modal/Header";
 import { Modal } from "./components/Modal";
 import { DIExample } from "./components/DIExample";
 import { Todo } from "./components/Todo";
+import { Provide } from "@mini/di";
+import { AlertService } from "./services/alert/AlertService";
 
+@Provide([AlertService])
 export class App extends Component {
   private name = signal("mini");
   private counter = signal(0);

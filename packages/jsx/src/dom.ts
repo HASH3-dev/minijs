@@ -105,6 +105,12 @@ export function appendChildren(
   } else if (child instanceof Component) {
     // Component instance - add as placeholder comment node
     // Application.processRenderedTree will replace this with rendered DOM
+
+    // IMPORTANT: Set parent component for DI hierarchy
+    if (componentInstance) {
+      child.__parent_component = componentInstance;
+    }
+
     const placeholder = document.createComment("component-placeholder");
     (placeholder as any).__mini_component = child;
     el.appendChild(placeholder);
