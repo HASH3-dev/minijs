@@ -1,3 +1,5 @@
+import { Component } from "@mini/core";
+
 /**
  * Process children and group them by slot name
  * Returns a Map where key is slot name (or "" for default) and value is array of children
@@ -10,7 +12,19 @@ export function processSlottedChildren(children: any): Map<string, any[]> {
       return;
     }
 
-    // Check if child is a Node with __mini_instance (a component)
+    // Check if child is a Component instance (before rendering)
+    if (child instanceof Component) {
+      if (child.props && child.props.slot) {
+        const slotName = child.props.slot;
+        if (!slotMap.has(slotName)) {
+          slotMap.set(slotName, []);
+        }
+        slotMap.get(slotName)!.push(child);
+        return;
+      }
+    }
+
+    // Check if child is a Node with __mini_instance (already rendered)
     if (child instanceof Node) {
       const instance = (child as any).__mini_instance;
       if (instance && instance.props && instance.props.slot) {

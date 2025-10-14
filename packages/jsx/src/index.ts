@@ -1,15 +1,39 @@
 import { Component, getChildSlots } from "@mini/core";
 import { applyProps, attachUnmountDetection } from "./dom";
 import { processSlottedChildren } from "./slots";
-import "./types";
-
-export type { ChildType } from "./types";
 
 // Track the currently rendering component instance
 let currentRenderingInstance: Component | undefined;
 
-export function Fragment(props: { children?: any }) {
-  return props.children as any;
+export function Fragment(props: { children?: any } = {}) {
+  const { children } = props;
+
+  // If no children, return empty text node
+  if (!children) {
+    return document.createTextNode("");
+  }
+
+  // If single child and it's a Node, return it directly
+  if (children instanceof Node) {
+    return children;
+  }
+
+  // If array of children, use DocumentFragment to group them
+  if (Array.isArray(children)) {
+    const fragment = document.createDocumentFragment();
+    children.forEach((child) => {
+      if (child instanceof Node) {
+        fragment.appendChild(child);
+      } else if (child != null) {
+        // Convert primitives to text nodes
+        fragment.appendChild(document.createTextNode(String(child)));
+      }
+    });
+    return fragment;
+  }
+
+  // Single primitive value
+  return document.createTextNode(String(children));
 }
 
 export function jsx(type: any, props: any, key?: any) {
@@ -24,6 +48,11 @@ export function createElement(
   instance?: Component
 ): Node {
   if (typeof type === "function") {
+    // Special case: Fragment is a function but not a component class
+    if (type === Fragment) {
+      return Fragment(props);
+    }
+
     // Component class instance
     const componentInstance = new type();
 
@@ -57,26 +86,40 @@ export function createElement(
       });
     }
 
-    // Set current rendering instance
+    // Set current rendering instance (for nested component creation)
     const previousInstance = currentRenderingInstance;
     currentRenderingInstance = componentInstance;
-
-    // Render
-    const rendered = componentInstance.render();
 
     // Restore previous instance
     currentRenderingInstance = previousInstance;
 
-    // Attach unmount detection
-    attachUnmountDetection(rendered, componentInstance);
-
-    // Attach instance reference
-    (rendered as any).__mini_instance = componentInstance;
-    return rendered;
+    // Return component instance (will be rendered by Application)
+    return componentInstance;
   }
 
   // DOM element - use current rendering instance or passed instance
   const el = document.createElement(type);
   applyProps(el, props, instance || currentRenderingInstance);
   return el;
+}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+    interface Element extends Node {}
+    interface ElementChildrenAttribute {
+      children: {};
+    }
+    interface ElementClass {
+      render(): any;
+    }
+    interface ElementAttributesProperty {
+      props: {};
+    }
+    interface IntrinsicAttributes {
+      children?: any;
+    }
+  }
 }

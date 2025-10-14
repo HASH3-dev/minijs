@@ -1,24 +1,20 @@
 /**
- * Mount decorator - runs a method when the component is mounted
+ * Mount decorator - marks a method to be called when the component is mounted
+ * The method is executed by Application.executeLifecycle()
+ * Supports multiple @Mount methods on the same class
  */
 export function Mount() {
   return function (target: any, key: string, desc: PropertyDescriptor) {
     const fn = desc.value;
     if (typeof fn !== "function")
       throw new Error("@Mount must decorate a method");
-    const originalRender = target.render;
-    target.render = function (...args: any[]) {
-      const already = this.__mini_mounted;
-      const node = originalRender.apply(this, args);
-      if (!already) {
-        this.__mini_mounted = true;
-        const cleanup = fn.call(this);
-        if (cleanup && typeof cleanup === "function") {
-          this.$.unmount$.subscribe({ complete: () => cleanup() });
-        }
-        this.$.mounted$.next();
-      }
-      return node;
-    };
+
+    // Store mount methods in an array to support multiple @Mount decorators
+    if (!target.__mini_mount_methods) {
+      target.__mini_mount_methods = [];
+    }
+    target.__mini_mount_methods.push(fn);
+
+    return desc;
   };
 }

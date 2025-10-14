@@ -1,8 +1,8 @@
 import { Component, Mount, signal, unwrap } from "@mini/core";
 import { interval, map, takeUntil } from "rxjs";
 import { CounterJSX } from "./components/CounterJSX";
-import { Footer } from "./components/Footer";
-import { Header } from "./components/Header";
+import { Footer } from "./components/Modal/Footer";
+import { Header } from "./components/Modal/Header";
 import { Modal } from "./components/Modal";
 import { DIExample } from "./components/DIExample";
 

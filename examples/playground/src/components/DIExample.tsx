@@ -51,7 +51,7 @@ export class DIExample extends Component {
         {this.theme.pipe(
           map(() => (
             <Provider values={this.providersFactory()}>
-              {() => ThemedCard}
+              <ThemedCard />
             </Provider>
           ))
         )}
