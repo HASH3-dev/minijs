@@ -5,6 +5,7 @@ import { Footer } from "./components/Modal/Footer";
 import { Header } from "./components/Modal/Header";
 import { Modal } from "./components/Modal";
 import { DIExample } from "./components/DIExample";
+import { Todo } from "./components/Todo";
 
 export class App extends Component {
   private name = signal("mini");
@@ -186,6 +187,10 @@ export class App extends Component {
           {/* Dependency Injection Example */}
           <div class="mt-12">
             <DIExample />
+          </div>
+
+          <div class="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+            <Todo />
           </div>
         </div>
       </div>
