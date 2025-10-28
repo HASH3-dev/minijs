@@ -1,6 +1,19 @@
-import { Component, toObservable, Application } from "@mini/core";
+import {
+  Component,
+  toObservable,
+  Application,
+  PARENT_COMPONENT,
+} from "@mini/core";
 import { Subscription } from "rxjs";
 import { takeUntil } from "rxjs/operators";
+import { SUBSCRIPTIONS } from "./constants";
+import {
+  COMPONENT_INSTANCE,
+  MUTATION_OBSERVER,
+  COMPONENT_PLACEHOLDER,
+  DOM_CACHE,
+  LIFECYCLE_EXECUTED,
+} from "@mini/core";
 
 /**
  * Attach unmount detection to a DOM node
@@ -26,7 +39,7 @@ export function attachUnmountDetection(node: Node, instance: Component) {
       parent = parent.parentNode;
     }
 
-    (node as any).__mini_observer = observer;
+    (node as any)[MUTATION_OBSERVER] = observer;
   }, 0);
 }
 
@@ -79,7 +92,7 @@ export function applyProps(
       setAttr(el, k, v as any);
     }
   }
-  (el as any).__mini_subs = subs;
+  (el as any)[SUBSCRIPTIONS] = subs;
 }
 
 /**
@@ -108,11 +121,11 @@ export function appendChildren(
 
     // IMPORTANT: Set parent component for DI hierarchy
     if (componentInstance) {
-      child.__parent_component = componentInstance;
+      child[PARENT_COMPONENT] = componentInstance;
     }
 
     const placeholder = document.createComment("component-placeholder");
-    (placeholder as any).__mini_component = child;
+    (placeholder as any)[COMPONENT_PLACEHOLDER] = child;
     el.appendChild(placeholder);
   } else {
     // Check if it's an Observable
@@ -134,7 +147,7 @@ export function appendChildren(
           // Remove old nodes and destroy components
           currentNodes.forEach((node) => {
             // Check if node has a component instance
-            const componentInstance = (node as any).__mini_instance;
+            const componentInstance = (node as any)[COMPONENT_INSTANCE];
             if (
               componentInstance &&
               typeof componentInstance.destroy === "function"
@@ -149,6 +162,12 @@ export function appendChildren(
           currentNodes = [];
 
           // Handle the new value
+          // Skip rendering for null, undefined, and false (conditional rendering)
+          if (val == null || val === false) {
+            // Do nothing - nodes already removed above
+            return;
+          }
+
           if (Array.isArray(val)) {
             // Observable emits array (e.g., from pipe(map(...)))
             const fragment = document.createDocumentFragment();
@@ -157,7 +176,7 @@ export function appendChildren(
                 // Component - render it using Application
                 // IMPORTANT: Set parent so DI and lifecycle work correctly
                 if (componentInstance) {
-                  item.__parent_component = componentInstance;
+                  item[PARENT_COMPONENT] = componentInstance;
                 }
                 const rendered = Application.render(item);
                 fragment.appendChild(rendered);
@@ -173,21 +192,52 @@ export function appendChildren(
             });
             endMarker.parentNode?.insertBefore(fragment, endMarker);
           } else if (val instanceof Component) {
-            // Observable emits a Component - render it using Application for proper two-phase rendering
-            // IMPORTANT: Set parent so DI and lifecycle work correctly
+            // Observable emits a Component
+            // CRITICAL: Create a NEW instance instead of reusing
+            // This ensures proper lifecycle and DI setup every time
+            const ComponentClass = val.constructor as any;
+            const newInstance = new ComponentClass();
+
+            // Copy props AND children from original
+            newInstance.props = val.props || {};
+            newInstance.children = val.children;
+
+            // Set parent for DI
             if (componentInstance) {
-              val.__parent_component = componentInstance;
+              newInstance[PARENT_COMPONENT] = componentInstance;
+              console.log(
+                "[MINI-DEBUG] jsx/dom.ts Observable: Set parent",
+                newInstance.constructor.name,
+                "→",
+                componentInstance.constructor.name
+              );
+            } else {
+              console.log(
+                "[MINI-DEBUG] jsx/dom.ts Observable: NO PARENT for",
+                newInstance.constructor.name
+              );
             }
-            const rendered = Application.render(val);
-            endMarker.parentNode?.insertBefore(rendered, endMarker);
-            currentNodes.push(rendered);
+
+            const rendered = Application.render(newInstance);
+
+            // If rendered is a DocumentFragment, we need to track its children
+            // because the fragment itself won't remain in the DOM
+            if (rendered instanceof DocumentFragment) {
+              const children = Array.from(rendered.childNodes);
+              endMarker.parentNode?.insertBefore(rendered, endMarker);
+              // Track the actual nodes that were inserted, not the fragment
+              currentNodes.push(...children);
+            } else {
+              endMarker.parentNode?.insertBefore(rendered, endMarker);
+              currentNodes.push(rendered);
+            }
           } else if (val instanceof Node) {
             // Observable emits a single Node
             endMarker.parentNode?.insertBefore(val, endMarker);
             currentNodes.push(val);
-          } else if (val != null && val !== false) {
-            // Observable emits single primitive value
-            const textNode = document.createTextNode(String(val ?? ""));
+          } else {
+            // Observable emits single primitive value (string, number, etc)
+            const textNode = document.createTextNode(String(val));
             endMarker.parentNode?.insertBefore(textNode, endMarker);
             currentNodes.push(textNode);
           }
@@ -195,7 +245,7 @@ export function appendChildren(
 
       (subscription as any).label = componentInstance?.constructor.name;
 
-      (startMarker as any).__mini_subs = [subscription];
+      (startMarker as any)[SUBSCRIPTIONS] = [subscription];
     }
   }
 }

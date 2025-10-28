@@ -3,6 +3,12 @@
  * Supports Liskov Substitution Principle and circular dependency detection
  */
 import "reflect-metadata";
+import {
+  GET_PARENT_INJECTOR,
+  INJECTOR_TOKEN,
+  SCOPE_METADATA,
+} from "./constants";
+import { InjectionScope, InjectableOptions } from "./types";
 
 export type Token<T = any> =
   | (abstract new (...args: any[]) => T)
@@ -39,17 +45,34 @@ export class Injector {
   private instances = new Map<Token, any>();
   private providers: Provider[];
   private resolving = new Set<Token>(); // Track tokens being resolved (circular dependency detection)
+  private ownerComponent?: any; // Component that owns this injector
+  private componentInstances = new WeakMap<any, Map<Token, any>>(); // BY_COMPONENT scoped instances
 
-  constructor(providers: ProviderShorthand[] = [], parent?: Injector) {
+  constructor(
+    providers: ProviderShorthand[] = [],
+    parent?: Injector,
+    ownerComponent?: any
+  ) {
     this.providers = providers.map(normalizeProvider);
     this.parent = parent;
+    this.ownerComponent = ownerComponent;
   }
 
   /**
    * Get instance of a token, creating it if necessary
    * Throws if token is not provided in this injector or any parent
+   * @param token The token to resolve
+   * @param requestingComponent Optional component requesting the dependency (for BY_COMPONENT scope)
    */
-  get<T>(token: Token<T>): T {
+  get<T>(token: Token<T>, requestingComponent?: any): T {
+    // Check the scope of the token
+    const scope = getScope(token);
+
+    // Handle BY_COMPONENT scope
+    if (scope === InjectionScope.BY_COMPONENT && requestingComponent) {
+      return this.getComponentScoped(token, requestingComponent);
+    }
+
     // 1. Check if already instantiated (singleton per injector)
     if (this.instances.has(token)) {
       return this.instances.get(token);
@@ -68,7 +91,7 @@ export class Injector {
     if (!provider) {
       // Try parent injector
       if (this.parent) {
-        return this.parent.get(token);
+        return this.parent.get(token, requestingComponent);
       }
 
       // No provider found
@@ -89,6 +112,79 @@ export class Injector {
       // 6. Remove from resolving set
       this.resolving.delete(token);
     }
+  }
+
+  /**
+   * Get or create a component-scoped instance
+   * @param token The token to resolve
+   * @param component The component requesting the dependency
+   */
+  private getComponentScoped<T>(token: Token<T>, component: any): T {
+    // Get or create the component's instance map
+    let componentMap = this.componentInstances.get(component);
+    if (!componentMap) {
+      componentMap = new Map<Token, any>();
+      this.componentInstances.set(component, componentMap);
+    }
+
+    // Check if already instantiated for this component
+    if (componentMap.has(token)) {
+      return componentMap.get(token);
+    }
+
+    // Find provider in this injector or parents
+    const provider = this.findProvider(token);
+    if (!provider) {
+      if (this.parent) {
+        return this.parent.getComponentScoped(token, component);
+      }
+      const tokenName =
+        typeof token === "function" ? token.name : token.toString();
+      throw new Error(`No provider found for token: ${tokenName}`);
+    }
+
+    // Instantiate for this component
+    const instance = this.instantiateComponentScoped(provider, component);
+    componentMap.set(token, instance);
+    return instance;
+  }
+
+  /**
+   * Instantiate a component-scoped provider
+   * @param provider The provider to instantiate
+   * @param component The component context
+   */
+  private instantiateComponentScoped<T>(
+    provider: Provider<T>,
+    component: any
+  ): T {
+    // useValue - return directly
+    if (provider.useValue !== undefined) {
+      return provider.useValue;
+    }
+
+    // useFactory - execute factory with resolved deps
+    if (provider.useFactory) {
+      const deps = provider.deps || [];
+      const resolvedDeps = deps.map((dep) => this.get(dep, component));
+      return provider.useFactory(...resolvedDeps);
+    }
+
+    // useClass or provide directly (must be a constructor)
+    const Ctor = (provider.useClass || provider.provide) as new (
+      ...args: any[]
+    ) => T;
+
+    // Get constructor parameter types from TypeScript metadata
+    const deps: Token[] = Reflect.getMetadata("design:paramtypes", Ctor) || [];
+
+    // Resolve all constructor dependencies with component context
+    const resolvedDeps = deps.map((dep) => this.get(dep, component));
+
+    // Create instance with resolved dependencies + component as last parameter
+    const instance = new Ctor(...resolvedDeps, component);
+
+    return instance;
   }
 
   /**
@@ -140,29 +236,52 @@ export class Injector {
 }
 
 /**
- * Decorator to mark a class as injectable
- * Not strictly required but helps with documentation
+ * Decorator to mark a class as injectable with optional scope configuration
+ * @param options Injectable options (scope, etc)
  */
-export function Injectable() {
+export function Injectable(options?: InjectableOptions) {
   return function <T extends new (...args: any[]) => any>(target: T) {
+    // Store scope metadata on the class
+    const scope = options?.scope ?? InjectionScope.SINGLETON;
+    Reflect.defineMetadata(SCOPE_METADATA, scope, target);
     return target;
   };
 }
 
 /**
+ * Helper to get the injection scope of a token
+ * @param token The token to check
+ * @returns The injection scope (defaults to SINGLETON)
+ */
+function getScope(token: Token): InjectionScope {
+  if (typeof token === "function") {
+    const metadata = Reflect.getMetadata(SCOPE_METADATA, token);
+    return metadata ?? InjectionScope.SINGLETON;
+  }
+  return InjectionScope.SINGLETON;
+}
+
+/**
  * Property decorator to inject a dependency
  * Creates a lazy getter that resolves the dependency when accessed
+ * Passes component context for BY_COMPONENT scoped dependencies
  */
 export function Inject<T>(token: Token<T>) {
   return function (target: any, propertyKey: string) {
     // Create lazy getter
     Object.defineProperty(target, propertyKey, {
       get(this: any) {
-        // First try direct injector, then traverse up the hierarchy
-        let injector: Injector | undefined = this.__mini_injector;
+        // Try multiple ways to get injector for compatibility
+        let injector: Injector | undefined =
+          this[INJECTOR_TOKEN] || this.__mini_injector || this.injector;
 
-        if (!injector && this.__getParentInjector) {
-          injector = this.__getParentInjector();
+        if (!injector) {
+          // Try getting parent injector
+          if (this[GET_PARENT_INJECTOR]) {
+            injector = this[GET_PARENT_INJECTOR]();
+          } else if (this.__getParentInjector) {
+            injector = this.__getParentInjector();
+          }
         }
 
         if (!injector) {
@@ -172,7 +291,9 @@ export function Inject<T>(token: Token<T>) {
               `Make sure the component is wrapped with @Provide or <Provider>.`
           );
         }
-        return injector.get(token);
+
+        // Pass component context for BY_COMPONENT scope support
+        return injector.get(token, this);
       },
       enumerable: true,
       configurable: true,
@@ -192,12 +313,17 @@ export function Provide(providers: ProviderShorthand[]) {
         super(...args);
 
         // Get parent injector (if exists)
-        const parentInjector: Injector | undefined = (
-          this as any
-        ).__getParentInjector?.();
+        const parentInjector: Injector | undefined = (this as any)[
+          GET_PARENT_INJECTOR
+        ]?.();
 
         // Create new child injector with the provided dependencies
-        (this as any).__mini_injector = new Injector(providers, parentInjector);
+        // Pass this component as ownerComponent for BY_COMPONENT scope support
+        (this as any)[INJECTOR_TOKEN] = new Injector(
+          providers,
+          parentInjector,
+          this
+        );
       }
     } as T;
 
@@ -214,3 +340,17 @@ export function Provide(providers: ProviderShorthand[]) {
 // Re-export types for convenience
 export { normalizeProvider };
 export type { Provider as MiniProvider, Token as MiniToken };
+
+// Export constants
+export {
+  INJECTOR_TOKEN,
+  GET_PARENT_INJECTOR,
+  SCOPE_METADATA,
+} from "./constants";
+
+// Export types and enums
+export { InjectionScope } from "./types";
+export type { InjectableOptions } from "./types";
+
+// Export helper functions
+export { getScope };

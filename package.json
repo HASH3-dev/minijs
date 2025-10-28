@@ -7,9 +7,10 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run clean && npm run -w @mini/di build && npm run -w @mini/core build && npm run -w @mini/jsx build && npm run -w @mini/plugin build",
+    "build": "npm run clean && npm run -w @mini/di build && npm run -w @mini/core build && npm run -w @mini/jsx build && npm run -w @mini/router build && npm run -w @mini/plugin build",
     "build:core": "npm run -w @mini/core build",
     "build:jsx": "npm run -w @mini/jsx build",
+    "build:router": "npm run -w @mini/router build",
     "clean": "rm -rf packages/*/dist",
     "rebuild": "npm run clean && npm run build",
     "predev": "npm run build",

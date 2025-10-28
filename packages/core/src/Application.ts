@@ -1,5 +1,16 @@
 import { Component } from "./Component";
 import { getChildSlots } from "./decorators/Child";
+import {
+  DOM_CACHE,
+  LIFECYCLE_EXECUTED,
+  COMPONENT_INSTANCE,
+  MUTATION_OBSERVER,
+  COMPONENT_PLACEHOLDER,
+  PARENT_COMPONENT,
+} from "./constants";
+import { MOUNT_METHODS } from "./decorators/Mount/constants";
+import { setupWatchers } from "./decorators/Watch";
+import { toObservable } from "./helpers";
 
 /**
  * Options for rendering components
@@ -150,9 +161,9 @@ export class Application {
     if (component instanceof Component) {
       // Update parent if provided
       if (options?.parent) {
-        component.__parent_component = options.parent;
+        component[PARENT_COMPONENT] = options.parent;
       } else if (options?.context) {
-        component.__parent_component = options.context;
+        component[PARENT_COMPONENT] = options.context;
       }
       return component;
     }
@@ -163,9 +174,9 @@ export class Application {
 
     // Set parent for DI
     if (options?.parent) {
-      instance.__parent_component = options.parent;
+      instance[PARENT_COMPONENT] = options.parent;
     } else if (options?.context) {
-      instance.__parent_component = options.context;
+      instance[PARENT_COMPONENT] = options.context;
     }
 
     return instance;
@@ -201,8 +212,33 @@ export class Application {
     }
 
     // Check if already rendered to prevent duplicate lifecycle calls
-    if ((component as any).__domCache) {
-      return (component as any).__domCache;
+    // BUT: if parent changed, we need to re-render for DI to work correctly
+    const cachedDom = (component as any)[DOM_CACHE];
+    if (cachedDom) {
+      const cachedParent = (component as any).__cachedParent;
+      const currentParent = component[PARENT_COMPONENT];
+
+      // If parent is the same, use cache
+      if (cachedParent === currentParent) {
+        return cachedDom;
+      }
+
+      // Parent changed - clear cache and re-render
+      delete (component as any)[DOM_CACHE];
+      delete (component as any)[LIFECYCLE_EXECUTED];
+    }
+
+    // Setup destroy chain if this component has a parent
+    // This handles Components from JSX (not just from properties)
+    const parent = component[PARENT_COMPONENT];
+    console.log(
+      "[MINI-DEBUG] Application.renderBottomUp:",
+      component.constructor.name,
+      "parent =",
+      parent ? parent.constructor.name : "NONE"
+    );
+    if (parent) {
+      this.setupDestroyChain(parent, component);
     }
 
     // 1. Render children in properties FIRST (recursive, bottom-up)
@@ -215,20 +251,78 @@ export class Application {
     // 3. Now render this component (may still have Component children in JSX)
     let domResult = component.render();
 
-    // 4. Restore previous instance
-    this.currentRenderingInstance = previousInstance;
+    // 4. Check if render returned an Observable
+    const obs = toObservable(domResult);
+    if (obs) {
+      // Render returned Observable - subscribe and process
+      // This is used by Guards, Resolvers, etc.
+      const placeholder = document.createComment("observable-render-start");
+      const endMarker = document.createComment("observable-render-end");
+      const fragment = document.createDocumentFragment();
+      fragment.appendChild(placeholder);
+      fragment.appendChild(endMarker);
+
+      let currentNode: Node | null = null;
+
+      obs.subscribe((value: any) => {
+        // CRITICAL: Set parent and setup destroy chain BEFORE processing
+        // processRenderedTree converts Components to DOM, so we must do this first!
+        this.setParentForTree(value, component);
+        this.setupDestroyChainForTree(value, component);
+
+        // Now process the value (converts Components to DOM)
+        const processed = this.processRenderedTree(value);
+
+        // Remove old node if exists
+        if (currentNode && currentNode.parentNode) {
+          currentNode.parentNode.removeChild(currentNode);
+        }
+
+        // Insert new node between markers
+        if (endMarker.parentNode) {
+          endMarker.parentNode.insertBefore(processed, endMarker);
+          currentNode = processed;
+
+          // Cache and attach metadata
+          (component as any)[DOM_CACHE] = processed;
+          (processed as any)[COMPONENT_INSTANCE] = component;
+
+          // Attach unmount detection if not already done
+          if (!(processed as any)[MUTATION_OBSERVER]) {
+            this.attachUnmountDetection(processed, component);
+          }
+
+          // Execute lifecycle if not already done
+          if (!(component as any)[LIFECYCLE_EXECUTED]) {
+            this.executeLifecycle(component);
+          }
+        }
+      });
+
+      return fragment;
+    }
 
     // 5. Process any Component instances in the rendered result
+    // IMPORTANT: Must be done BEFORE restoring currentRenderingInstance
+    // so that nested components can find their parent
     domResult = this.processRenderedTree(domResult);
 
-    // 6. Cache result and attach metadata
-    (component as any).__domCache = domResult;
-    (domResult as any).__mini_instance = component;
+    // 6. Restore previous instance (AFTER processing tree!)
+    this.currentRenderingInstance = previousInstance;
+    console.log(
+      "[MINI-DEBUG] Application: RESTORE currentRenderingInstance =",
+      previousInstance ? previousInstance.constructor.name : "NONE"
+    );
 
-    // 7. Attach unmount detection (must be done before lifecycle to ensure cleanup works)
+    // 7. Cache result and attach metadata
+    (component as any)[DOM_CACHE] = domResult;
+    (component as any).__cachedParent = component[PARENT_COMPONENT];
+    (domResult as any)[COMPONENT_INSTANCE] = component;
+
+    // 8. Attach unmount detection (must be done before lifecycle to ensure cleanup works)
     this.attachUnmountDetection(domResult, component);
 
-    // 8. Execute lifecycle hooks
+    // 9. Execute lifecycle hooks
     this.executeLifecycle(component);
 
     return domResult;
@@ -253,11 +347,22 @@ export class Application {
 
     // Check if it's a placeholder comment node
     if (node.nodeType === Node.COMMENT_NODE) {
-      const component = (node as any).__mini_component;
+      const component = (node as any)[COMPONENT_PLACEHOLDER]; // Note: This is set by jsx-runtime
       if (component instanceof Component) {
         // Replace placeholder with rendered component
         return this.renderBottomUp(component);
       }
+    }
+
+    // If it's a DocumentFragment, process its children
+    if (node instanceof DocumentFragment) {
+      const children = Array.from(node.childNodes);
+      children.forEach((child) => {
+        const processed = this.processRenderedTree(child);
+        if (processed !== child) {
+          node.replaceChild(processed, child);
+        }
+      });
     }
 
     // If it's an Element, process its children
@@ -275,6 +380,89 @@ export class Application {
   }
 
   /**
+   * Recursively sets parent component for all components in a tree (including JSX structures)
+   */
+  private static setParentForTree(node: any, parent: Component): void {
+    if (node instanceof Component) {
+      node[PARENT_COMPONENT] = parent;
+      // Also process children of this component
+      if (node.children) {
+        if (Array.isArray(node.children)) {
+          node.children.forEach((child) => this.setParentForTree(child, node));
+        } else {
+          this.setParentForTree(node.children, node);
+        }
+      }
+    } else if (node instanceof DocumentFragment || node instanceof Element) {
+      Array.from(node.childNodes).forEach((child) => {
+        this.setParentForTree(child, parent);
+      });
+    } else if (Array.isArray(node)) {
+      node.forEach((item) => {
+        this.setParentForTree(item, parent);
+      });
+    } else if (node && typeof node === "object" && node.type) {
+      // JSX element structure - check props.children
+      if (node.props && node.props.children) {
+        if (Array.isArray(node.props.children)) {
+          node.props.children.forEach((child: any) =>
+            this.setParentForTree(child, parent)
+          );
+        } else {
+          this.setParentForTree(node.props.children, parent);
+        }
+      }
+    }
+  }
+
+  /**
+   * Recursively setup destroy chain for all components in a tree (including JSX structures)
+   */
+  private static setupDestroyChainForTree(node: any, parent: Component): void {
+    if (node instanceof Component) {
+      this.setupDestroyChain(parent, node);
+      // Also process children of this component
+      if (node.children) {
+        if (Array.isArray(node.children)) {
+          node.children.forEach((child) =>
+            this.setupDestroyChainForTree(child, node)
+          );
+        } else {
+          this.setupDestroyChainForTree(node.children, node);
+        }
+      }
+    } else if (
+      node instanceof Comment &&
+      (node as any)[COMPONENT_PLACEHOLDER]
+    ) {
+      // Component placeholder - setup chain for the component
+      const comp = (node as any)[COMPONENT_PLACEHOLDER];
+      if (comp instanceof Component) {
+        this.setupDestroyChain(parent, comp);
+      }
+    } else if (node instanceof DocumentFragment || node instanceof Element) {
+      Array.from(node.childNodes).forEach((child) => {
+        this.setupDestroyChainForTree(child, parent);
+      });
+    } else if (Array.isArray(node)) {
+      node.forEach((item) => {
+        this.setupDestroyChainForTree(item, parent);
+      });
+    } else if (node && typeof node === "object" && node.type) {
+      // JSX element structure - check props.children
+      if (node.props && node.props.children) {
+        if (Array.isArray(node.props.children)) {
+          node.props.children.forEach((child: any) =>
+            this.setupDestroyChainForTree(child, parent)
+          );
+        } else {
+          this.setupDestroyChainForTree(node.props.children, parent);
+        }
+      }
+    }
+  }
+
+  /**
    * Renders all children of a component
    * Replaces Component instances with their rendered DOM nodes
    */
@@ -287,7 +475,9 @@ export class Application {
 
         if (child instanceof Component) {
           // Update parent for DI hierarchy
-          child.__parent_component = component;
+          child[PARENT_COMPONENT] = component;
+          // Setup destroy chain: when parent unmounts, destroy child
+          this.setupDestroyChain(component, child);
           // Render child and replace with DOM
           const renderedChild = this.renderBottomUp(child);
           (component as any)[propertyKey] = renderedChild;
@@ -296,7 +486,9 @@ export class Application {
           const renderedChildren = child.map((c) => {
             if (c instanceof Component) {
               // Update parent for DI hierarchy
-              c.__parent_component = component;
+              c[PARENT_COMPONENT] = component;
+              // Setup destroy chain
+              this.setupDestroyChain(component, c);
               return this.renderBottomUp(c);
             }
             return c;
@@ -310,19 +502,51 @@ export class Application {
     if (component.children) {
       if (component.children instanceof Component) {
         // Update parent for DI hierarchy
-        component.children.__parent_component = component;
+        component.children[PARENT_COMPONENT] = component;
+        // Setup destroy chain
+        this.setupDestroyChain(component, component.children);
         component.children = this.renderBottomUp(component.children);
       } else if (Array.isArray(component.children)) {
         component.children = component.children.map((child) => {
           if (child instanceof Component) {
             // Update parent for DI hierarchy
-            child.__parent_component = component;
+            child[PARENT_COMPONENT] = component;
+            // Setup destroy chain
+            this.setupDestroyChain(component, child);
             return this.renderBottomUp(child);
           }
           return child;
         });
       }
     }
+  }
+
+  /**
+   * Setup reactive destroy chain: when parent unmounts, child destroys
+   * This propagates unmount signals through the component tree
+   */
+  private static setupDestroyChain(parent: Component, child: Component): void {
+    // Skip if already setup to avoid duplicate subscriptions
+    if ((child as any).__destroyChainSetup) {
+      return;
+    }
+
+    // Mark as setup before subscribing
+    (child as any).__destroyChainSetup = true;
+
+    // Subscribe to parent's unmount signal
+    parent.$.unmount$.subscribe({
+      next: () => {
+        // When parent unmounts, destroy child
+        // This will clear child's cache and emit its own unmount$ signal
+        // which propagates to its children, creating a chain reaction
+        child.destroy();
+      },
+      complete: () => {
+        // Also destroy on complete to handle edge cases
+        child.destroy();
+      },
+    });
   }
 
   /**
@@ -349,7 +573,7 @@ export class Application {
         parent = parent.parentNode;
       }
 
-      (node as any).__mini_observer = observer;
+      (node as any)[MUTATION_OBSERVER] = observer;
     }, 0);
   }
 
@@ -358,14 +582,18 @@ export class Application {
    */
   private static executeLifecycle(component: Component): void {
     // Check if already executed to prevent duplicates
-    if ((component as any).__lifecycle_executed) {
+    if ((component as any)[LIFECYCLE_EXECUTED]) {
       return;
     }
-    (component as any).__lifecycle_executed = true;
+    (component as any)[LIFECYCLE_EXECUTED] = true;
+
+    // Setup @Watch decorators (must be done before @Mount methods)
+    setupWatchers(component);
 
     // Call all @Mount decorated methods
-    const mountMethods = (component.constructor.prototype as any)
-      .__mini_mount_methods;
+    const mountMethods = (component.constructor.prototype as any)[
+      MOUNT_METHODS
+    ];
     if (Array.isArray(mountMethods)) {
       mountMethods.forEach((mountFn) => {
         if (typeof mountFn === "function") {

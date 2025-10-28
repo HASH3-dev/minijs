@@ -14,6 +14,11 @@ import { ThemedCard } from "./ThemeCard";
 export class DIExample extends Component {
   private theme = signal<"dark" | "light">("light");
 
+  constructor() {
+    super();
+    console.log("[DIExample] constructor() called");
+  }
+
   toggleTheme() {
     const current = unwrap(this.theme);
     this.theme.next(current === "dark" ? "light" : "dark");
@@ -30,6 +35,7 @@ export class DIExample extends Component {
   }
 
   render() {
+    console.log("[DIExample] render() called");
     return (
       <div class="space-y-6">
         <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">

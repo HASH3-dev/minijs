@@ -1,15 +1,15 @@
 import { Component, Mount, signal, unwrap } from "@mini/core";
+import { Provide } from "@mini/di";
 import { interval, map, takeUntil } from "rxjs";
 import { CounterJSX } from "./components/CounterJSX";
+import { DIExample } from "./components/DIExample";
+import { Modal } from "./components/Modal";
 import { Footer } from "./components/Modal/Footer";
 import { Header } from "./components/Modal/Header";
-import { Modal } from "./components/Modal";
-import { DIExample } from "./components/DIExample";
 import { Todo } from "./components/Todo";
-import { Provide } from "@mini/di";
 import { AlertService } from "./services/alert/AlertService";
 
-@Provide([AlertService])
+@Provide([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
 export class App extends Component {
   private name = signal("mini");
   private counter = signal(0);
@@ -72,12 +72,12 @@ export class App extends Component {
           {/* Modal Section */}
           <div class="mb-8">
             <Modal>
-              <Header slot="header" />
-              <Footer slot="footer" />
               <p class="text-slate-700 mb-3">
                 This is the main content of the modal!
               </p>
               <p class="text-slate-600">It goes into the default slot.</p>
+              <Header slot="header" />
+              <Footer slot="footer" />
             </Modal>
           </div>
 

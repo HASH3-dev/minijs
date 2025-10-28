@@ -210,7 +210,8 @@ export class Modal extends Component {
   render() {
     return (
       <>
-        {this.isOpen && <div class="modal-backdrop">
+        {this.isOpen.pipe(map(open => open && (
+          <div class="modal-backdrop">
             <div class="modal-container">
               <div class="modal-header">
                 {this.modalHeader}
@@ -227,7 +228,8 @@ export class Modal extends Component {
                 </button>
               </div>
             </div>
-          </div>}
+          </div>
+        )))}
       </>
     );
   }
@@ -515,7 +517,7 @@ Outros frameworks renderizam top-down. Isso causa:
 // → DI context sempre disponível
 
 <App>           // 6. Renderizado por último
-  <Dashboard>   // 5. Renderizado depois
+  <Dashboard>   // z. Renderizado depois
     <Widget />  // 4. Renderizado primeiro
   </Dashboard>
 </App>

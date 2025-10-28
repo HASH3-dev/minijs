@@ -1,9 +1,11 @@
-import { Component, getChildSlots } from "@mini/core";
+import {
+  Component,
+  getChildSlots,
+  PARENT_COMPONENT,
+  Application,
+} from "@mini/core";
 import { applyProps, attachUnmountDetection } from "./dom";
 import { processSlottedChildren } from "./slots";
-
-// Track the currently rendering component instance
-let currentRenderingInstance: Component | undefined;
 
 export function Fragment(props: { children?: any } = {}) {
   const { children } = props;
@@ -66,9 +68,21 @@ export function createElement(
     }
 
     // Set parent component reference for DI hierarchy
-    const parentInstance = instance || currentRenderingInstance;
+    const parentInstance =
+      instance || Application.getCurrentRenderingInstance();
     if (parentInstance) {
-      componentInstance.__parent_component = parentInstance;
+      componentInstance[PARENT_COMPONENT] = parentInstance;
+      console.log(
+        "[MINI-DEBUG] jsx/index.ts: Set parent",
+        componentInstance.constructor.name,
+        "→",
+        parentInstance.constructor.name
+      );
+    } else {
+      console.log(
+        "[MINI-DEBUG] jsx/index.ts: NO PARENT for",
+        componentInstance.constructor.name
+      );
     }
 
     // Process children and populate @Child decorated properties
@@ -86,20 +100,13 @@ export function createElement(
       });
     }
 
-    // Set current rendering instance (for nested component creation)
-    const previousInstance = currentRenderingInstance;
-    currentRenderingInstance = componentInstance;
-
-    // Restore previous instance
-    currentRenderingInstance = previousInstance;
-
     // Return component instance (will be rendered by Application)
     return componentInstance;
   }
 
   // DOM element - use current rendering instance or passed instance
   const el = document.createElement(type);
-  applyProps(el, props, instance || currentRenderingInstance);
+  applyProps(el, props, instance || Application.getCurrentRenderingInstance());
   return el;
 }
 

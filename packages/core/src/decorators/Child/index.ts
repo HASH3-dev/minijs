@@ -1,4 +1,4 @@
-import { CHILD_METADATA_KEY } from "../types";
+import { CHILD_METADATA_KEY } from "./constants";
 
 /**
  * Decorator to mark a property as a child slot receiver
@@ -36,3 +36,6 @@ export function getChildSlots(
 ): Map<string, string> | undefined {
   return componentClass[CHILD_METADATA_KEY];
 }
+
+export { CHILD_METADATA_KEY } from "./constants";
+export type { ChildType } from "./types";

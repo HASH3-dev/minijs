@@ -1,0 +1,34 @@
+{
+  "name": "@mini/router",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format esm,cjs --sourcemap",
+    "dev": "tsup src/index.ts --dts --format esm,cjs --sourcemap --watch"
+  },
+  "dependencies": {
+    "@mini/core": "workspace:*",
+    "@mini/di": "workspace:*",
+    "@mini/jsx": "workspace:*",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.2"
+  }
+}

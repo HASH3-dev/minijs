@@ -1,6 +1,12 @@
 import { Component } from "./Component";
-import { Injector, normalizeProvider } from "@mini/di";
+import {
+  GET_PARENT_INJECTOR,
+  Injector,
+  INJECTOR_TOKEN,
+  normalizeProvider,
+} from "@mini/di";
 import type { ProviderShorthand } from "@mini/di";
+import { PARENT_COMPONENT } from "./constants";
 
 /**
  * Provider component for hierarchical dependency injection
@@ -15,25 +21,26 @@ import type { ProviderShorthand } from "@mini/di";
  */
 export class Provider extends Component<{ values: ProviderShorthand[] }> {
   // Override getter to create injector lazily
-  get __mini_injector(): Injector | undefined {
-    if (!super.__mini_injector && this.props?.values) {
-      const parentInjector: Injector | undefined = super.__getParentInjector();
+  get [INJECTOR_TOKEN](): Injector | undefined {
+    if (!super[INJECTOR_TOKEN] && this.props?.values) {
+      const parentInjector: Injector | undefined = super[
+        GET_PARENT_INJECTOR
+      ]?.();
       const providers = (this.props.values || []).map(normalizeProvider);
-      super.__mini_injector = new Injector(providers, parentInjector);
+      super[INJECTOR_TOKEN] = new Injector(providers, parentInjector);
     }
-    return super.__mini_injector;
+    return super[INJECTOR_TOKEN];
   }
 
-  set __mini_injector(value: Injector | undefined) {
-    super.__mini_injector = value;
+  set [INJECTOR_TOKEN](value: Injector | undefined) {
+    super[INJECTOR_TOKEN] = value;
   }
 
   render() {
     // Ensure injector exists BEFORE processing children
-    this.__mini_injector;
+    this[INJECTOR_TOKEN];
 
-    // Provider requires a render prop (function) to work correctly
-    // Otherwise children are created before Provider and won't have access to the injector
+    // Handle function children (render prop pattern)
     if (typeof this.children === "function") {
       const ComponentClass = this.children();
 
@@ -41,15 +48,23 @@ export class Provider extends Component<{ values: ProviderShorthand[] }> {
         // Create instance with Provider as parent
         const instance = new ComponentClass();
         instance.props = {};
-        instance.__parent_component = this;
+        instance[PARENT_COMPONENT] = this;
 
         // Render and return directly
         return instance.render();
       }
     }
 
-    // If children is not a function, it was created before Provider
-    // In this case, just return the children as-is (they won't have DI access)
+    // Handle Component instance children
+    if (this.children instanceof Component) {
+      // Set Provider as parent so DI works
+      this.children[PARENT_COMPONENT] = this;
+
+      // Return the children as-is - Application will render it properly
+      return this.children;
+    }
+
+    // If children is already rendered Node, return it
     if (this.children instanceof Node) {
       return this.children;
     }

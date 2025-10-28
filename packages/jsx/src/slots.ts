@@ -1,4 +1,4 @@
-import { Component } from "@mini/core";
+import { Component, COMPONENT_INSTANCE } from "@mini/core";
 
 /**
  * Process children and group them by slot name
@@ -24,9 +24,9 @@ export function processSlottedChildren(children: any): Map<string, any[]> {
       }
     }
 
-    // Check if child is a Node with __mini_instance (already rendered)
+    // Check if child is a Node with [COMPONENT_INSTANCE] (already rendered)
     if (child instanceof Node) {
-      const instance = (child as any).__mini_instance;
+      const instance = (child as any)[COMPONENT_INSTANCE];
       if (instance && instance.props && instance.props.slot) {
         const slotName = instance.props.slot;
         if (!slotMap.has(slotName)) {
