@@ -2,8 +2,18 @@
  * Dependency Injection Example
  * Demonstrates reactive DI with theme switching
  */
-import { Component, Provider, signal, unwrap } from "@mini/core";
-import { map } from "rxjs";
+import {
+  Component,
+  Inject,
+  Injectable,
+  Mount,
+  Provider,
+  Resolver,
+  signal,
+  unwrap,
+  UseResolvers,
+} from "@mini/core";
+import { BehaviorSubject, map } from "rxjs";
 import { ThemeService } from "../services/theme/ThemeService.Abstract";
 import { DarkTheme } from "../services/theme/ThemeService.DarkTheme";
 import { LightTheme } from "../services/theme/ThemeService.LightTheme";
@@ -11,18 +21,45 @@ import { ThemedCard } from "./ThemeCard";
 
 // ===== Main DI Demo Component with Theme Toggle =====
 
+interface User {
+  id: number;
+  name: string;
+}
+
+@Injectable()
+class UserResolver implements Resolver<User | null> {
+  resolve(): Promise<User | null> {
+    // return from<Promise<User | null>>(
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve({ id: 1, name: "John Doe" });
+        // reject(new Error("User not found"));
+      }, 3000);
+    });
+    // );
+  }
+}
+
+@UseResolvers([UserResolver])
 export class DIExample extends Component {
   private theme = signal<"dark" | "light">("light");
+
+  @Inject(UserResolver) user!: BehaviorSubject<User | null>;
 
   constructor() {
     super();
     console.log("[DIExample] constructor() called");
   }
 
+  @Mount()
+  onMount() {
+    console.log("[DIExample] onMount() called", unwrap(this.user));
+  }
+
   toggleTheme() {
     const current = unwrap(this.theme);
     this.theme.next(current === "dark" ? "light" : "dark");
-    console.log(`Theme switched to: ${current}`);
+    console.log(`Theme switched to: ${this.theme.value}`);
   }
 
   providersFactory() {
@@ -34,10 +71,14 @@ export class DIExample extends Component {
     ];
   }
 
+  renderLoading() {
+    return <div>Loading...</div>;
+  }
+
   render() {
-    console.log("[DIExample] render() called");
     return (
       <div class="space-y-6">
+        <p>{unwrap(this.user)?.name}</p>
         <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
           <h2 class="text-3xl font-bold mb-2">
             💉 Reactive Dependency Injection

@@ -1,4 +1,4 @@
-import { INJECTOR_TOKEN } from "@mini/di";
+import { INJECTOR_TOKEN } from "../../di";
 import { Observable } from "rxjs";
 
 /**

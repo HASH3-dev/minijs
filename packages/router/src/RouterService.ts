@@ -3,7 +3,7 @@
  * Provides component-specific route information and navigation methods
  */
 
-import { Injectable, InjectionScope } from "@mini/di";
+import { Injectable, InjectionScope } from "@mini/core";
 import { router } from "./Router";
 import { map } from "rxjs";
 import type { Component } from "@mini/core";

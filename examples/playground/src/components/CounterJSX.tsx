@@ -1,23 +1,20 @@
 /** A Counter component using @mini/jsx reactive islands */
-import {
-  Component,
-  Mount,
-  signal,
-  unwrap,
-  UseGuards,
-  GuardInterface,
-} from "@mini/core";
-import { map, Observable } from "rxjs";
+import { Component, Mount, signal, unwrap, UseGuards, Guard } from "@mini/core";
+import { finalize, map, Observable, of, tap } from "rxjs";
 import { Todo } from "./Todo";
-import { Inject } from "@mini/di";
+import { Inject, Injectable } from "@mini/core";
 import { WatchExample } from "./WatchExample";
+import { randomBoolean } from "../utils/randomBoolean";
 
-class CanActivate implements GuardInterface {
+@Injectable()
+class CanActivate implements Guard {
   @Inject(Symbol.for("name")) name!: string;
 
   canActivate() {
-    console.log("CanActivate", this.name);
-    return true;
+    // return false;
+    return new Promise<boolean>((resolve) =>
+      setTimeout(() => resolve(randomBoolean()), 1000)
+    );
   }
 
   fallback() {
@@ -25,13 +22,17 @@ class CanActivate implements GuardInterface {
   }
 }
 
-class Guard2 implements GuardInterface {
+@Injectable()
+class Guard2 implements Guard {
   @Inject(Symbol.for("name")) name!: string;
 
   constructor(public text: string) {}
 
   canActivate() {
-    return true;
+    return of(randomBoolean());
+    // return new Promise<boolean>((resolve) =>
+    //   setTimeout(() => resolve(true), 1000)
+    // );
   }
 
   fallback() {
@@ -56,22 +57,28 @@ export class CounterJSX extends Component<{ name: Observable<string> }> {
 
   @Mount()
   onMount() {
-    console.log("mount", this.name);
-    return () => {
-      console.log("unmount");
-    };
+    return this.count.pipe(
+      tap(() => console.log("count")),
+      finalize(() => console.log("unmount"))
+    );
+  }
+
+  @Mount()
+  onMount2() {
+    console.log("mount 2");
+    this.$.unmount$.subscribe(() => console.log("unmount"));
   }
 
   render() {
     const inc = () => this.count.next(unwrap(this.count) + 1);
     const dec = () => this.count.next(unwrap(this.count) - 1);
 
-    console.log("render", this.props.name);
-
     return (
       <>
         <div>
-          {this.count.pipe(map((e) => (e > 3 ? <span>SASDSDASD</span> : null)))}
+          {this.count.pipe(
+            map((e) => (e > 3 ? <span>It is more than 3</span> : null))
+          )}
         </div>
         <section class="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 class="text-2xl font-semibold text-slate-800 mb-4">

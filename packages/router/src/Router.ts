@@ -4,7 +4,7 @@
  */
 
 import { BehaviorSubject } from "rxjs";
-import { Injectable } from "@mini/di";
+import { Injectable } from "@mini/core";
 import type { RouteState, NavigationOptions } from "./types";
 import { matchPath } from "./RouteMatch";
 

@@ -1,6 +1,6 @@
 import { Component, Mount } from "@mini/core";
 import { MODAL } from "./constants";
-import { Inject } from "@mini/di";
+import { Inject } from "@mini/core";
 
 export class Header extends Component {
   @Inject(MODAL)

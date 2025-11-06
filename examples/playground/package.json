@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@mini/core": "*",
-    "@mini/di": "*",
-    "@mini/jsx": "*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

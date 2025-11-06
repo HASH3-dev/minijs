@@ -1,10 +1,10 @@
-import { Component, Child, ChildType, Mount } from "@mini/core";
+import { Component, Child, ChildType, Mount, UseProviders } from "@mini/core";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
-import { Inject, Provide } from "@mini/di";
+import { Inject } from "@mini/core";
 import { MODAL } from "./constants";
 
-@Provide([{ provide: MODAL, useValue: true }])
+@UseProviders([{ provide: MODAL, useValue: true }])
 export class Modal extends Component {
   @Child("header") header!: Header;
   @Child("footer") footer!: Footer;
@@ -18,6 +18,7 @@ export class Modal extends Component {
   }
 
   render() {
+    console.log("Modal render");
     return (
       <>
         <div class="bg-white rounded-2xl shadow-xl border-2 border-slate-300 overflow-hidden">

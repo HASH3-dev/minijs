@@ -1,6 +1,12 @@
-import { Component, Mount, signal, unwrap } from "@mini/core";
-import { Provide } from "@mini/di";
-import { interval, map, takeUntil } from "rxjs";
+import {
+  Component,
+  logComponentHierarchy,
+  Mount,
+  signal,
+  unwrap,
+  UseProviders,
+} from "@mini/core";
+import { interval, map, take, tap } from "rxjs";
 import { CounterJSX } from "./components/CounterJSX";
 import { DIExample } from "./components/DIExample";
 import { Modal } from "./components/Modal";
@@ -9,7 +15,7 @@ import { Header } from "./components/Modal/Header";
 import { Todo } from "./components/Todo";
 import { AlertService } from "./services/alert/AlertService";
 
-@Provide([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
+@UseProviders([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
 export class App extends Component {
   private name = signal("mini");
   private counter = signal(0);
@@ -24,24 +30,24 @@ export class App extends Component {
 
   @Mount()
   onMount() {
-    console.log("App mounted");
-    const sub = interval(5000)
-      .pipe(takeUntil(this.$.unmount$))
-      .subscribe(() => {
+    // Log hierarchy after render completes
+    setTimeout(() => {
+      console.log("=== COMPONENT HIERARCHY ===");
+      logComponentHierarchy(this);
+      console.log("===========================");
+    }, 1000);
+
+    return interval(5000).pipe(
+      // take(0),
+      // tap(() => console.log("tap")),
+      tap(() => {
         const counter = unwrap(this.counter);
         const teste = unwrap(this.teste);
 
         this.counter.next(counter + 1);
         this.teste.next([...teste, counter]);
-
-        console.log(this.name);
-      });
-
-    return () => {
-      console.log("App unmounted");
-
-      sub.unsubscribe();
-    };
+      })
+    );
   }
 
   @Mount()
@@ -51,17 +57,16 @@ export class App extends Component {
 
   addItem() {
     const prev = unwrap(this.list);
-    this.list.next([...prev, prev.length]);
+    this.list.next([...prev, prev.length + 1]);
   }
 
   render() {
-    console.log("App render");
     return (
       <div class="min-h-screen p-8">
         <div class="max-w-7xl mx-auto">
           {/* Header */}
           <header class="text-center mb-12">
-            <h1 class="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 class="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
               Mini Framework Playground
             </h1>
             <p class="text-slate-600 text-lg">

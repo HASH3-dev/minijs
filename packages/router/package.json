@@ -22,9 +22,7 @@
     "dev": "tsup src/index.ts --dts --format esm,cjs --sourcemap --watch"
   },
   "dependencies": {
-    "@mini/core": "workspace:*",
-    "@mini/di": "workspace:*",
-    "@mini/jsx": "workspace:*",
+    "@mini/core": "*",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {

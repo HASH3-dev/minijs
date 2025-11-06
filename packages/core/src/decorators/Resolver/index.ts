@@ -1,21 +1,14 @@
-/**
- * @UseResolvers decorator
- * Loads data before rendering component and makes resolved data available via DI
- */
-
-import { Component } from "../../Component";
-import { isClass } from "../../utils";
-import { applyDI } from "../../utils/applyDI";
+import "reflect-metadata";
 import { RESOLVERS_METADATA } from "./constants";
-import { ResolverType, ResolverClass } from "./types";
-import { Observable, of, from, forkJoin, catchError, map } from "rxjs";
-import { INJECTOR_TOKEN } from "@mini/di";
-import { RENDER_STATE } from "../../constants";
-import { RenderState } from "../../types";
+import { ResolverType } from "./types";
 
 /**
  * Decorator to load data before rendering component
  * Resolved data is made available via DI using resolver class as token
+ *
+ * The actual resolver execution is handled by ResolverDecoratorPlugin
+ * which runs in the Created lifecycle phase
+ *
  * @param resolvers Array of resolver instances or classes
  * @example
  * // Define resolver
@@ -55,173 +48,16 @@ import { RenderState } from "../../types";
  * }
  */
 export function UseResolvers(resolvers: ResolverType[]) {
-  return function <T extends new (...args: any[]) => any>(Ctor: T) {
-    const WrappedComponent = class extends Ctor {
-      private resolverMap: Map<any, any>;
-
-      constructor(...args: any[]) {
-        super(...args);
-
-        // Store resolvers metadata
-        (this as any)[RESOLVERS_METADATA] = resolvers;
-
-        // Create map to store resolver instances temporarily
-        this.resolverMap = new Map();
-
-        // Instantiate resolvers
-        for (const resolver of [resolvers].flat()) {
-          let resolverInstance: any;
-          let resolverKey: any;
-
-          // If resolver is a class, instantiate it
-          if (isClass(resolver)) {
-            const ResolverClass = resolver as ResolverClass;
-            resolverKey = ResolverClass;
-            resolverInstance = new ResolverClass();
-          } else {
-            resolverKey = resolver.constructor;
-            resolverInstance = resolver;
-          }
-
-          // Set up injector references for DI in resolver
-          applyDI(this, resolverInstance);
-
-          // Store instance with key
-          this.resolverMap.set(resolverKey, resolverInstance);
-        }
-
-        // Set initial LOADING state
-        (this as any)[RENDER_STATE] = RenderState.LOADING;
-
-        // Start resolving immediately
-        this.executeResolvers().subscribe({
-          next: (finalState) => {
-            // Set final state (SUCCESS/ERROR/EMPTY)
-            (this as any)[RENDER_STATE] = finalState;
-          },
-          error: () => {
-            // Set ERROR state on failure
-            (this as any)[RENDER_STATE] = RenderState.ERROR;
-          },
-        });
-      }
-
-      /**
-       * Execute all resolvers
-       */
-      private executeResolvers(): Observable<RenderState> {
-        if (this.resolverMap.size === 0) {
-          return of(RenderState.SUCCESS);
-        }
-
-        const injector = (this as any)[INJECTOR_TOKEN];
-
-        // Execute all resolvers in parallel
-        const executions$ = Array.from(this.resolverMap.entries()).map(
-          ([key, instance]) => {
-            const result = instance.resolve();
-
-            // Convert to Observable
-            let result$: Observable<any>;
-            if (result instanceof Observable) {
-              result$ = result;
-            } else if (result instanceof Promise) {
-              result$ = from(result);
-            } else {
-              result$ = of(result);
-            }
-
-            // Process result
-            return result$.pipe(
-              map((data) => {
-                // Determine if data is empty
-                let state: RenderState;
-                if (typeof instance.isEmpty === "function") {
-                  // Use custom isEmpty if provided
-                  state = instance.isEmpty(data)
-                    ? RenderState.EMPTY
-                    : RenderState.SUCCESS;
-                } else {
-                  // Default: null or undefined is empty
-                  state =
-                    data === null || data === undefined
-                      ? RenderState.EMPTY
-                      : RenderState.SUCCESS;
-                }
-
-                // Register RESOLVED DATA in injector using resolver class as token
-                if (injector) {
-                  injector.providers.set(key, {
-                    provide: key,
-                    useValue: data, // Register the DATA, not the resolver instance
-                  });
-                }
-
-                return { state, error: null };
-              }),
-              catchError((error) => {
-                return of({
-                  state: RenderState.ERROR,
-                  error:
-                    error instanceof Error ? error : new Error(String(error)),
-                });
-              })
-            );
-          }
-        );
-
-        // Execute all in parallel
-        return forkJoin(executions$).pipe(
-          map((results) => {
-            // Determine overall state
-            const states = results.map((r) => r.state);
-
-            if (states.some((s) => s === RenderState.ERROR)) {
-              return RenderState.ERROR;
-            }
-            if (states.some((s) => s === RenderState.LOADING)) {
-              return RenderState.LOADING;
-            }
-            if (states.every((s) => s === RenderState.EMPTY)) {
-              return RenderState.EMPTY;
-            }
-
-            return RenderState.SUCCESS;
-          }),
-          catchError(() => of(RenderState.ERROR))
-        );
-      }
-
-      render() {
-        // Get current state
-        const currentState = (this as any)[RENDER_STATE];
-
-        // Use helper to determine which render method to call
-        const renderMethod = (this as any).__getRenderMethod(currentState);
-
-        // If null, skip render (already rendered with fallback)
-        if (renderMethod === null) {
-          return null;
-        }
-
-        // Call the appropriate render method
-        return renderMethod();
-      }
-    } as T;
-
-    // Preserve original class name
-    Object.defineProperty(WrappedComponent, "name", {
-      value: Ctor.name,
-      writable: false,
-    });
-
-    return WrappedComponent;
+  return function <T extends new (...args: any[]) => any>(target: T) {
+    // Store metadata on prototype for ResolverPlugin to read
+    Reflect.defineMetadata(RESOLVERS_METADATA, resolvers, target.prototype);
+    return target;
   };
 }
 
 // Re-export types
 export type {
-  Resolver as ResolverInterface,
+  Resolver,
   ResolverClass,
   ResolverType,
   ResolvedData,

@@ -1,4 +1,4 @@
-import { Injectable } from "@mini/di";
+import { Injectable } from "@mini/core";
 import { ThemeService } from "./ThemeService.Abstract";
 
 @Injectable()
