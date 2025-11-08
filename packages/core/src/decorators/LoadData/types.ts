@@ -18,4 +18,5 @@ export interface LoadDataConfig {
 export interface LoadFragmentConfig {
   states: RenderState[];
   label: string;
+  transformParams?: (params: any[]) => any[];
 }

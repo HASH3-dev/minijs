@@ -4,11 +4,11 @@
  */
 
 import { from, Observable, of, takeUntil } from "rxjs";
-import { Component } from "../../base/Component";
-import { LifecyclePhase } from "../../base/ReactiveComponent";
-import { RENDER_STATE } from "../../constants";
-import { RenderState } from "../../types";
-import { LoadDataConfig } from "./types";
+import { Component } from "../../../base/Component";
+import { LifecyclePhase } from "../../../base/ReactiveComponent";
+import { RENDER_STATE } from "../../../constants";
+import { RenderState } from "../../../types";
+import { LoadDataConfig } from "../types";
 
 /**
  * Decorator for data loading methods

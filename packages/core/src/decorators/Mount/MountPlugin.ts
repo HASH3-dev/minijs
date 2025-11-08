@@ -19,7 +19,7 @@ export class MountDecoratorPlugin extends DecoratorPlugin {
    */
   execute(component: Component): void {
     // Get mount methods from metadata
-    const mountMethods = this.getMetadata<Function[]>(component, MOUNT_METHODS);
+    const mountMethods = this.getMetadata<string[]>(component, MOUNT_METHODS);
 
     if (!mountMethods || mountMethods.length === 0) {
       return;
@@ -28,7 +28,7 @@ export class MountDecoratorPlugin extends DecoratorPlugin {
     // Execute all mount methods
     for (const method of mountMethods) {
       try {
-        const cleanup = method.call(component);
+        const cleanup = (component as any)[method]?.call(component);
 
         if (isObservable(cleanup)) {
           cleanup.pipe(takeUntil(component.$.unmount$)).subscribe();

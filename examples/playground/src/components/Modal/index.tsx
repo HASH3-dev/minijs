@@ -3,8 +3,9 @@ import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { Inject } from "@mini/core";
 import { MODAL } from "./constants";
+import { ApiService } from "./services/ApiService";
 
-@UseProviders([{ provide: MODAL, useValue: true }])
+@UseProviders([{ provide: MODAL, useValue: true }, ApiService])
 export class Modal extends Component {
   @Child("header") header!: Header;
   @Child("footer") footer!: Footer;

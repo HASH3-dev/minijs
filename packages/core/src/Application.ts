@@ -1,5 +1,5 @@
 import { Observable, Subscription } from "rxjs";
-import { takeUntil } from "rxjs/operators";
+import { mergeMap, takeUntil } from "rxjs/operators";
 import { Component } from "./base/Component";
 import {
   CHILDREN_HIERARCHY,
@@ -326,66 +326,70 @@ export class Application {
 
     let mountedNotified = false;
 
-    obs!.pipe(takeUntil(component.$.unmount$)).subscribe({
-      next: (value: any) => {
-        // Remove old node if exists (but only the DOM node, don't destroy component)
+    obs!
+      .pipe(takeUntil(component.$.unmount$), mergeMap(toObservable))
+      .subscribe({
+        next: (value: any) => {
+          if (!mountedNotified) {
+            this.setupDestroyChainForTree(value, component);
 
-        // If value is false/null, just remove and don't render anything
-        if (value === null || value === false) {
-          component.destroy();
-          return;
-        }
+            // Now process the value (converts Components to DOM)
+            const processed = this.processRenderedTree(value, component);
 
-        if (!mountedNotified) {
-          this.setupDestroyChainForTree(value, component);
+            [processed].flat().forEach((node) => {
+              // Cache and attach metadata
+              (component as any)[DOM_CACHE] = node;
 
-          // Now process the value (converts Components to DOM)
-          // Pass component as parent explicitly
-          // this.currentRenderingInstance = component;
-          const processed = this.processRenderedTree(value, component);
-          // this.currentRenderingInstance = undefined;
+              // Attach unmount detection if not already done
+              if (!(node as any)[MUTATION_OBSERVER]) {
+                this.attachUnmountDetection(node, component);
+              }
+            });
 
-          [processed].flat().forEach((node) => {
-            // Cache and attach metadata
-            (component as any)[DOM_CACHE] = node;
+            component.renderChildren(processed);
 
-            // Attach unmount detection if not already done
-            if (!(node as any)[MUTATION_OBSERVER]) {
-              this.attachUnmountDetection(node, component);
+            // Notify mounted only once when first value is emitted
+            component._notifyMounted();
+            mountedNotified = true;
+          } else {
+            // Remove old node if exists (but only the DOM node, don't destroy component)
+            // If value is false/null, just remove and don't render anything
+            if (value === null || value === false) {
+              component.destroy();
+              return;
             }
-          });
 
-          component.renderChildren(processed);
+            const processed = this.processRenderedTree(value, component);
 
-          // Notify mounted only once when first value is emitted
-          component._notifyMounted();
-          mountedNotified = true;
-        } else {
-          // this.currentRenderingInstance = component;
-          const processed = this.processRenderedTree(value, component);
-          // this.currentRenderingInstance = undefined;
+            [processed].flat().forEach((node) => {
+              Application.exchangeComponentMetadata(
+                component.getRenderedNodes()[0],
+                node
+              );
+              // Cache and attach metadata
+              (component as any)[DOM_CACHE] = node;
+            });
 
-          [processed].flat().forEach((node) => {
-            Application.exchangeComponentMetadata(
-              component.getRenderedNodes()[0],
-              node
-            );
-            // Cache and attach metadata
-            (component as any)[DOM_CACHE] = node;
-          });
-
-          component.replaceChild(processed);
-        }
-      },
-      complete: () => {
-        // component.destroy();
-      },
-    });
+            component.replaceChild(processed);
+          }
+        },
+        complete: () => {
+          // component.destroy();
+        },
+        error: (error) => {
+          console.error(error);
+          // component.destroy();
+        },
+      });
 
     return fragment;
   }
 
   private static exchangeComponentMetadata(currentNode: Node, toNode: Node) {
+    if (!currentNode || !toNode) {
+      return;
+    }
+
     Object.assign(toNode, {
       [MUTATION_OBSERVER]: (currentNode as any)?.[MUTATION_OBSERVER],
       [COMPONENT_INSTANCE]: (currentNode as any)?.[COMPONENT_INSTANCE],

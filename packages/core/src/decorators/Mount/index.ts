@@ -9,13 +9,11 @@ export function Mount() {
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
-    const originalMethod = descriptor.value;
-
     // Store mount methods on the prototype
     if (!target[MOUNT_METHODS]) {
       target[MOUNT_METHODS] = [];
     }
-    target[MOUNT_METHODS].push(originalMethod);
+    target[MOUNT_METHODS].push(propertyKey);
 
     return descriptor;
   };

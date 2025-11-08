@@ -1,13 +1,12 @@
-import { BehaviorSubject, Observable, isObservable } from "rxjs";
-import { PARENT_COMPONENT, COMPONENT_INSTANCE, DOM_CACHE } from "./constants";
+import { BehaviorSubject, Observable, from, isObservable } from "rxjs";
 import { Component } from "./base/Component";
+import { COMPONENT_INSTANCE, PARENT_COMPONENT } from "./constants";
 
 /**
  * Check if a value is an Observable
  */
-export function toObservable<T>(v: T | Observable<T>): Observable<T> | null {
-  if (isObservable(v)) return v as Observable<T>;
-  return null;
+export function toObservable<T>(v: T | Observable<T>): Observable<T> {
+  return isObservable(v) ? v : from(Promise.resolve(v));
 }
 
 /**

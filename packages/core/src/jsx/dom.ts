@@ -1,4 +1,4 @@
-import { Subscription } from "rxjs";
+import { isObservable, Observable, Subscription } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import { Application } from "../Application";
 import { Component } from "../base/Component";
@@ -46,11 +46,11 @@ export const applyProps = (
     }
 
     // Handle reactive attributes
-    const obs = toObservable(v as any);
+    const obs = isObservable(v as any);
     if (obs) {
       const observable = componentInstance
-        ? obs.pipe(takeUntil(componentInstance.$.unmount$))
-        : obs;
+        ? (v as Observable<any>).pipe(takeUntil(componentInstance.$.unmount$))
+        : (v as Observable<any>);
       const s = observable.subscribe((val) => setAttr(el, k, val as any));
       (s as any).label = componentInstance?.constructor.name;
       subs.push(s);

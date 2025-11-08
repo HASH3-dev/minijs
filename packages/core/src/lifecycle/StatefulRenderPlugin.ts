@@ -1,17 +1,11 @@
-import {
-  BehaviorSubject,
-  EMPTY,
-  isObservable,
-  mergeMap,
-  NEVER,
-  of,
-} from "rxjs";
+import { BehaviorSubject, mergeMap, NEVER } from "rxjs";
 import { Component } from "../base/Component";
 import { LifecyclePhase } from "../base/ReactiveComponent";
 import {
   LOAD_DATA_METHODS,
   LOAD_DATA_STATE,
 } from "../decorators/LoadData/constants";
+import { toObservable } from "../helpers";
 import { RenderState } from "../types";
 import { DecoratorPlugin } from "./DecoratorPlugin";
 
@@ -45,10 +39,15 @@ export class StatefulRenderPlugin extends DecoratorPlugin {
           let result: any;
           if (label) {
             result = renderResult ??= originalRender.bind(component)();
-            const renderMethod = this.getRenderMethod(component, state, label);
+
+            const [renderMethod, transformFn = (e: any = []) => e] =
+              this.getRenderMethod(component, state, label) ?? [];
+
             (component as any)[LOAD_DATA_STATE].next({
               ...(component as any)[LOAD_DATA_STATE].value,
-              [label]: renderMethod?.apply(component, data),
+              [label]:
+                renderMethod?.apply(component, transformFn([data].flat())) ??
+                data,
             });
 
             if (renderResult) {
@@ -56,30 +55,37 @@ export class StatefulRenderPlugin extends DecoratorPlugin {
             }
           } else {
             const renderMethod =
-              this.getRenderMethod(component, state, label) ??
+              this.getRenderMethod(component, state) ??
               (() => {
                 if (renderResult) {
                   return renderResult;
                 }
                 return (renderResult = originalRender.apply(component));
               });
-            result = renderMethod.apply(component, data);
+
+            result = renderMethod.apply(component, [data].flat());
           }
 
           // If result is Observable, return it directly (switchMap will flatten)
           // Otherwise, wrap in Observable
 
-          return isObservable(result) ? result : of(result);
+          return toObservable(result);
         }, Infinity)
       );
     };
   }
 
+  getRenderMethod(component: Component<{}>, state: RenderState): Function;
+  getRenderMethod(
+    component: Component<{}>,
+    state: RenderState,
+    label: string | symbol
+  ): [Function, Function];
   getRenderMethod(
     component: Component<{}>,
     state: RenderState,
     label?: string | symbol
-  ): Function | undefined {
+  ): Function | [Function, Function] | undefined {
     if (label) {
       return (component as any)[LOAD_DATA_METHODS]?.[label!]?.[state];
     } else {
