@@ -13,6 +13,12 @@ import { Injector } from "../di/Injector";
 import { RenderState } from "../types";
 import { createElement, Fragment, jsx } from "../jsx";
 
+export interface RenderStateValues {
+  state: RenderState;
+  data?: any;
+  label?: string | symbol;
+}
+
 /**
  * Base Component class with generic props support
  * Props must be accessed via this.props.[propName]
@@ -105,9 +111,9 @@ export abstract class Component<
     mounted$: new Subject<void>(),
   };
 
-  private __render_state$ = new BehaviorSubject<RenderState>(
-    RenderState.SUCCESS
-  );
+  private __render_state$ = new BehaviorSubject<RenderStateValues>({
+    state: RenderState.SUCCESS,
+  });
 
   /**
    * Lifecycle signals - convenience API
@@ -128,21 +134,15 @@ export abstract class Component<
   /**
    * Get current render state
    */
-  get [RENDER_STATE](): RenderState {
+  get [RENDER_STATE](): RenderStateValues {
     return this.__render_state$.value;
   }
 
   /**
    * Set render state and trigger re-render
    */
-  set [RENDER_STATE](state: RenderState) {
-    if (this.__render_state$.value !== state) {
-      this.__render_state$.next(state);
-      // Trigger re-render by calling destroy
-      if (state !== RenderState.SUCCESS) {
-        // this.destroy();
-      }
-    }
+  set [RENDER_STATE](values: RenderStateValues) {
+    this.__render_state$.next(values);
   }
 
   /**

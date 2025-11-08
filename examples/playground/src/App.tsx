@@ -14,6 +14,7 @@ import { Footer } from "./components/Modal/Footer";
 import { Header } from "./components/Modal/Header";
 import { Todo } from "./components/Todo";
 import { AlertService } from "./services/alert/AlertService";
+import { LoadingContent } from "./components/LoadingContent";
 
 @UseProviders([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
 export class App extends Component {
@@ -81,6 +82,7 @@ export class App extends Component {
                 This is the main content of the modal!
               </p>
               <p class="text-slate-600">It goes into the default slot.</p>
+              <LoadingContent />
               <Header slot="header" />
               <Footer slot="footer" />
             </Modal>

@@ -7,6 +7,7 @@ export {
   MUTATION_OBSERVER,
   COMPONENT_PLACEHOLDER,
   SUBSCRIPTIONS,
+  RENDER_STATE,
 } from "./constants";
 
 // Base Classes (new architecture)
@@ -25,7 +26,7 @@ export { DecoratorPlugin } from "./lifecycle/DecoratorPlugin";
 import "./lifecycle/registerDefaultPlugins"; // Auto-register default plugins
 
 // Component
-export { Component } from "./base/Component";
+export { Component, RenderStateValues } from "./base/Component";
 export { Provider } from "./ProviderComponent";
 
 // Decorators
@@ -53,9 +54,10 @@ export { UseProviders } from "./decorators/UseProviders";
 
 export {
   LoadData,
+  LoadFragment,
   getLoadDataState,
-  RenderState,
-  RENDER_STATE,
+  LOAD_DATA_METHODS,
+  LOAD_DATA_STATE,
 } from "./decorators/LoadData";
 
 // Helpers
@@ -89,3 +91,5 @@ export type {
 
 // JSX
 export { jsx, jsxs, jsxDEV, Fragment } from "./jsx";
+
+export { RenderState } from "./types";

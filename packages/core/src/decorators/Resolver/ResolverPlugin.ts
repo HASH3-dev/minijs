@@ -1,31 +1,31 @@
-import { DecoratorPlugin } from "../../lifecycle/DecoratorPlugin";
-import { Component } from "../../base/Component";
-import { RESOLVERS_METADATA } from "./constants";
 import {
-  RENDER_STATE,
-  PARENT_COMPONENT,
-  SERVICE_COMPONENT,
-} from "../../constants";
-import { LifecyclePhase } from "../../base/ReactiveComponent";
-import { ResolverType, ResolverClass } from "./types";
-import { isClass } from "../../utils";
-import {
+  catchError,
+  forkJoin,
+  from,
+  lastValueFrom,
+  map,
   Observable,
   of,
-  from,
-  forkJoin,
-  catchError,
-  map,
   startWith,
-  lastValueFrom,
 } from "rxjs";
+import { Component, RenderStateValues } from "../../base/Component";
+import { LifecyclePhase } from "../../base/ReactiveComponent";
 import {
-  registerResolvedData,
+  PARENT_COMPONENT,
+  RENDER_STATE,
+  SERVICE_COMPONENT,
+} from "../../constants";
+import {
   getOrCreateInjector,
   INJECTOR_TOKEN,
+  registerResolvedData,
 } from "../../di";
-import { RenderState } from "../../types";
 import { signal } from "../../helpers";
+import { DecoratorPlugin } from "../../lifecycle/DecoratorPlugin";
+import { RenderState } from "../../types";
+import { isClass } from "../../utils";
+import { RESOLVERS_METADATA } from "./constants";
+import { ResolverClass, ResolverType } from "./types";
 
 /**
  * Plugin that executes @UseResolvers logic
@@ -57,10 +57,10 @@ export class ResolverDecoratorPlugin extends DecoratorPlugin {
     }
 
     // Ensure component has injector
-    if (!component.injector && !(component as any)[INJECTOR_TOKEN]) {
+    if (!component.injector && !(component as Component)[INJECTOR_TOKEN]) {
       // Create empty injector with parent for hierarchy
-      const parentComponent = (component as any)[PARENT_COMPONENT];
-      (component as any)[INJECTOR_TOKEN] = getOrCreateInjector(
+      const parentComponent = (component as Component)[PARENT_COMPONENT];
+      (component as Component)[INJECTOR_TOKEN] = getOrCreateInjector(
         component,
         [],
         parentComponent
@@ -111,7 +111,7 @@ export class ResolverDecoratorPlugin extends DecoratorPlugin {
     }
 
     // Set initial LOADING state
-    (component as any)[RENDER_STATE] = RenderState.LOADING;
+    (component as Component)[RENDER_STATE] = { state: RenderState.LOADING };
 
     // Execute all resolvers
     try {
@@ -120,10 +120,13 @@ export class ResolverDecoratorPlugin extends DecoratorPlugin {
       );
 
       // Emit final state to renderState$
-      (component as any)[RENDER_STATE] = finalState;
+      (component as Component)[RENDER_STATE] = finalState;
     } catch (error) {
       // Emit ERROR state on failure
-      (component as any)[RENDER_STATE] = RenderState.ERROR;
+      (component as Component)[RENDER_STATE] = {
+        state: RenderState.ERROR,
+        data: error,
+      };
     }
   }
 
@@ -133,9 +136,9 @@ export class ResolverDecoratorPlugin extends DecoratorPlugin {
   private executeResolvers(
     component: Component,
     resolverMap: Map<any, any>
-  ): Observable<RenderState> {
+  ): Observable<RenderStateValues> {
     if (resolverMap.size === 0) {
-      return of(RenderState.SUCCESS);
+      return of({ state: RenderState.SUCCESS });
     }
 
     // Execute all resolvers in parallel
@@ -177,13 +180,13 @@ export class ResolverDecoratorPlugin extends DecoratorPlugin {
 
             resolvedData$.next(data);
 
-            return { state, error: null };
+            return { state, data };
           }),
           catchError((error) => {
             console.error("[ResolverPlugin] Error resolving:", error);
             return of({
               state: RenderState.ERROR,
-              error: error instanceof Error ? error : new Error(String(error)),
+              data: error instanceof Error ? error : new Error(String(error)),
             });
           })
         );
@@ -194,21 +197,22 @@ export class ResolverDecoratorPlugin extends DecoratorPlugin {
     return forkJoin(executions$).pipe(
       map((results) => {
         // Determine overall state
-        const states = results.map((r) => r.state);
+        const states = results;
 
-        if (states.some((s) => s === RenderState.ERROR)) {
-          return RenderState.ERROR;
+        let finded: RenderStateValues | undefined;
+        if ((finded = states.find((s) => s.state === RenderState.ERROR))) {
+          return finded;
         }
-        if (states.some((s) => s === RenderState.LOADING)) {
-          return RenderState.LOADING;
+        if ((finded = states.find((s) => s.state === RenderState.LOADING))) {
+          return finded;
         }
-        if (states.every((s) => s === RenderState.EMPTY)) {
-          return RenderState.EMPTY;
+        if (states.every((s) => s.state === RenderState.EMPTY)) {
+          return { state: RenderState.EMPTY };
         }
 
-        return RenderState.SUCCESS;
+        return { state: RenderState.SUCCESS, data: states.map((e) => e.data) };
       }),
-      catchError(() => of(RenderState.ERROR))
+      catchError((err) => of({ state: RenderState.ERROR, data: err }))
     );
   }
 }
