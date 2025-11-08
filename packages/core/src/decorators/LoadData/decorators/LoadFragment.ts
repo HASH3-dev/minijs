@@ -3,14 +3,15 @@
  * Method decorator that manages loading states framents
  */
 
+import { Component } from "../../../base/Component";
 import { LOAD_DATA_METHODS } from "../constants";
 import { LoadFragmentConfig } from "../types";
 
-export function LoadFragment({
+export function LoadFragment<T>({
   states,
   label,
-  transformParams = (e = []) => e,
-}: LoadFragmentConfig): MethodDecorator {
+  transformParams = (e: any[] = [], instance: T) => e,
+}: LoadFragmentConfig<T>): MethodDecorator {
   return function (
     target: any,
     propertyKey: string | symbol,

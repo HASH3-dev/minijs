@@ -46,8 +46,10 @@ export class StatefulRenderPlugin extends DecoratorPlugin {
             (component as any)[LOAD_DATA_STATE].next({
               ...(component as any)[LOAD_DATA_STATE].value,
               [label]:
-                renderMethod?.apply(component, transformFn([data].flat())) ??
-                data,
+                renderMethod?.apply(
+                  component,
+                  transformFn([data].flat(), component)
+                ) ?? data,
             });
 
             if (renderResult) {

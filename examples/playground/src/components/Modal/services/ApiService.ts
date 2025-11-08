@@ -16,7 +16,7 @@ export class ApiService {
               modal: this.modal,
             },
           ]),
-        500
+        5000
       )
     );
   }

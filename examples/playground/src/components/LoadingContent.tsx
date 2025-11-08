@@ -8,10 +8,11 @@ import {
   RenderState,
 } from "@mini/core";
 import { ApiService } from "./Modal/services/ApiService";
-import { from, merge, mergeMap, startWith } from "rxjs";
 
 export class LoadingContent extends Component {
   @Inject(ApiService) api!: ApiService;
+
+  years = "years";
   // userName = signal<string | null>(null);
   // userAge = signal<number | null>(null);
 
@@ -33,6 +34,7 @@ export class LoadingContent extends Component {
   @Mount()
   @LoadData({ label: "Age" })
   loadUserAge() {
+    console.log("loading content on mount");
     return new Promise<number>((resolve) => {
       setTimeout(() => {
         resolve(37);
@@ -69,12 +71,16 @@ export class LoadingContent extends Component {
     return <div>Error to load {label}</div>;
   }
 
-  @LoadFragment({
+  @LoadFragment<LoadingContent>({
     states: [RenderState.SUCCESS],
     label: "Age",
-    transformParams: (e) => [e, "years"],
+    transformParams: (e, _) => [e, _.years],
   })
-  ageSuccessFragment(data: any, unit: string) {
+  async ageSuccessFragment(data: any, unit: string) {
+    console.log(
+      "fetch async request on success age fragment",
+      await this.api.fetchUsers()
+    );
     return (
       <span className="font-bold text-red-500">
         {data} {unit}
@@ -83,7 +89,10 @@ export class LoadingContent extends Component {
   }
 
   async render() {
-    console.log("LoadingContent render", await this.api.fetchUsers());
+    console.log(
+      "fetch async request on main LoadingContent render",
+      await this.api.fetchUsers()
+    );
 
     return (
       <div className="rounded border border-gray-200 p-4">

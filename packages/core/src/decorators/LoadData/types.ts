@@ -15,8 +15,8 @@ export interface LoadDataConfig {
   loadPhase?: LifecyclePhase;
 }
 
-export interface LoadFragmentConfig {
+export interface LoadFragmentConfig<T> {
   states: RenderState[];
   label: string;
-  transformParams?: (params: any[]) => any[];
+  transformParams?: (params: any[], instance: T) => any[];
 }
