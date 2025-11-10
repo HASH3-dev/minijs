@@ -6,6 +6,7 @@
 import "reflect-metadata";
 import { ROUTE_PATH_METADATA, ROUTE_CONFIG_METADATA } from "./constants";
 import type { RouteConfig, RouteMetadataStored } from "./types";
+import { Component, PARENT_COMPONENT } from "@mini/core/jsx-runtime";
 
 /**
  * Decorator to mark a component as a route
@@ -19,21 +20,25 @@ import type { RouteConfig, RouteMetadataStored } from "./types";
  */
 export function Route(pathOrConfig: string | RouteConfig): ClassDecorator {
   return function <T extends Function>(target: T): T {
+    const path = ((pathOrConfig as RouteConfig)?.path ?? pathOrConfig)
+      .replace(/(\/\/*)/g, "/")
+      .replace(/\/$/, "");
+
     // Parse config
     const config: RouteMetadataStored =
       typeof pathOrConfig === "string"
-        ? { path: pathOrConfig }
+        ? { path }
         : {
-            path: pathOrConfig.path,
+            path,
             exact: pathOrConfig.exact,
             title: pathOrConfig.title,
           };
 
     // Store path metadata (for quick access)
-    Reflect.defineMetadata(ROUTE_PATH_METADATA, config.path, target);
+    Reflect.defineMetadata(ROUTE_PATH_METADATA, config.path, target.prototype);
 
     // Store full config metadata
-    Reflect.defineMetadata(ROUTE_CONFIG_METADATA, config, target);
+    Reflect.defineMetadata(ROUTE_CONFIG_METADATA, config, target.prototype);
 
     return target;
   };
@@ -44,8 +49,23 @@ export function Route(pathOrConfig: string | RouteConfig): ClassDecorator {
  * @param target Component class
  * @returns Route path or undefined if not a route
  */
-export function getRoutePath(target: Function): string | undefined {
+export function getRoutePath(target: Component): string | undefined {
   return Reflect.getMetadata(ROUTE_PATH_METADATA, target);
+}
+
+export function getAscenssorRoutePath(target: Component): string | undefined {
+  let parent = (target as any)[PARENT_COMPONENT];
+  while (parent) {
+    if (!isRoute(parent)) {
+      parent = (parent as any)[PARENT_COMPONENT];
+      continue;
+    }
+
+    const path = getRoutePath(parent);
+    if (path) {
+      return path;
+    }
+  }
 }
 
 /**
@@ -54,7 +74,7 @@ export function getRoutePath(target: Function): string | undefined {
  * @returns Route config or undefined if not a route
  */
 export function getRouteConfig(
-  target: Function
+  target: Component
 ): RouteMetadataStored | undefined {
   return Reflect.getMetadata(ROUTE_CONFIG_METADATA, target);
 }
@@ -64,6 +84,6 @@ export function getRouteConfig(
  * @param target Component class
  * @returns True if component has @Route decorator
  */
-export function isRoute(target: Function): boolean {
+export function isRoute(target: Component): boolean {
   return Reflect.hasMetadata(ROUTE_PATH_METADATA, target);
 }

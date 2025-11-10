@@ -32,8 +32,11 @@ export function parsePattern(pattern: string): {
     }
   );
 
+  // Add leading and trailing slashes
+  regexPattern = regexPattern.replace(/^\/|\/$/g, "/*?");
+
   // Ensure exact match (start and end)
-  const regex = new RegExp(`^${regexPattern}$`);
+  const regex = new RegExp(`^${regexPattern}/*?`);
 
   return { regex, paramNames };
 }
@@ -45,7 +48,14 @@ export function parsePattern(pattern: string): {
  */
 export function matchPath(path: string, pattern: string): MatchResult {
   const { regex, paramNames } = parsePattern(pattern);
+  console.log("[matchPath]", path, pattern, regex, paramNames);
   const match = path.match(regex);
+  console.log("[matchPath]", match, {
+    path,
+    pattern,
+    regex,
+    paramNames,
+  });
 
   if (!match) {
     return {
@@ -65,6 +75,8 @@ export function matchPath(path: string, pattern: string): MatchResult {
   // Higher score = more specific route
   // Static segments have higher priority than dynamic ones
   const score = calculateScore(pattern);
+
+  console.log("[matchPath]", path, pattern, params, score);
 
   return {
     matched: true,

@@ -6,17 +6,19 @@ import {
   unwrap,
   UseProviders,
 } from "@mini/core";
-import { interval, map, take, tap } from "rxjs";
+import { Route } from "@mini/router";
+import { interval, map, tap } from "rxjs";
 import { CounterJSX } from "./components/CounterJSX";
 import { DIExample } from "./components/DIExample";
+import { LoadingContent } from "./components/LoadingContent";
 import { Modal } from "./components/Modal";
 import { Footer } from "./components/Modal/Footer";
 import { Header } from "./components/Modal/Header";
 import { Todo } from "./components/Todo";
 import { AlertService } from "./services/alert/AlertService";
-import { LoadingContent } from "./components/LoadingContent";
 
 @UseProviders([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
+// @Route({ path: "/", exact: true })
 export class App extends Component {
   private name = signal("mini");
   private counter = signal(0);

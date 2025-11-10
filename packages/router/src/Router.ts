@@ -80,6 +80,12 @@ export class Router {
       this.syncUrl();
     };
 
+    const url = new URL(window.location.href);
+    if (/\/+$/.test(url.pathname)) {
+      url.pathname = url.pathname.replace(/\/*?$/, "");
+      history.replaceState(null, "", url.toString());
+    }
+
     this.initialized = true;
     this.syncUrl(); // Sync initial state
   }

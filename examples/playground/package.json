@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@mini/core": "*",
+    "@mini/router": "*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

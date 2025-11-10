@@ -3,12 +3,17 @@
  * Renders route components based on current path
  */
 
-import { Component } from "@mini/core";
+import { Component, LifecyclePhase, PARENT_COMPONENT } from "@mini/core";
 import { Mount } from "@mini/core";
 import { router } from "./Router";
-import { getRoutePath, getRouteConfig, isRoute } from "./decorators/Route";
+import {
+  getRoutePath,
+  getRouteConfig,
+  isRoute,
+  getAscenssorRoutePath,
+} from "./decorators/Route";
 import { findBestMatch } from "./RouteMatch";
-import { takeUntil } from "rxjs";
+import { filter, takeUntil } from "rxjs";
 
 /**
  * RouteSwitcher props
@@ -38,9 +43,20 @@ export interface RouteSwitcherProps {
  */
 export class RouteSwitcher extends Component<RouteSwitcherProps> {
   private currentPath: string = "";
+  private ascenssorRoutePath: string = "";
 
-  @Mount()
-  onMount() {
+  constructor() {
+    super();
+
+    this.lifecycle$
+      .pipe(
+        takeUntil(this.$.unmount$),
+        filter((e) => e === LifecyclePhase.BeforeMount)
+      )
+      .subscribe(() => {
+        this.ascenssorRoutePath = getAscenssorRoutePath(this) ?? "";
+      });
+
     // Initialize router if not already initialized
     if (!(router as any)["initialized"]) {
       router.initialize();
@@ -50,12 +66,20 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
     const sub = router.route$
       .pipe(takeUntil(this.$.unmount$))
       .subscribe((route) => {
-        this.currentPath = route.path;
+        this.currentPath = route.path.replace(/\/$/, "");
         // Force re-render by destroying and letting framework re-create
-        this.destroy();
+        // this.destroy();
       });
   }
 
+  @Mount()
+  mount() {
+    console.log(
+      "RouteSwitcher mounted",
+      getAscenssorRoutePath(this),
+      getRoutePath(this[PARENT_COMPONENT] as any)
+    );
+  }
   /**
    * Extract route information from children
    */
@@ -70,31 +94,44 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
       exact?: boolean;
     }> = [];
 
-    if (!this.props.children) {
+    if (!this.children) {
       return routes;
     }
 
     // Iterate through children
-    const children = Array.isArray(this.props.children)
-      ? this.props.children
-      : [this.props.children];
+    const children = Array.isArray(this.children)
+      ? this.children
+      : [this.children];
 
     for (const child of children) {
       // Get the component class (could be instance or class)
-      const ComponentClass =
-        typeof child === "function" ? child : child?.constructor;
+      const ComponentClass = child;
 
       if (!ComponentClass) {
         continue;
       }
 
+      console.log({ child, ComponentClass }, isRoute(ComponentClass));
       // Check if it's a route component
       if (isRoute(ComponentClass)) {
         const config = getRouteConfig(ComponentClass);
         if (config) {
+          let path = config.path;
+          if (this.ascenssorRoutePath) {
+            path = [this.ascenssorRoutePath, path]
+              .join("/")
+              .replace(/(\/\/*)/g, "/")
+              .replace(/\/$/, "");
+          }
+          console.log({
+            ascenssor: this.ascenssorRoutePath,
+            component: child,
+            path,
+            exact: config.exact,
+          });
           routes.push({
             component: child,
-            path: config.path,
+            path,
             exact: config.exact,
           });
         }
@@ -109,6 +146,7 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
    */
   private findMatchingRoute() {
     const routes = this.extractRoutes();
+    console.log({ routes });
 
     if (routes.length === 0) {
       return null;
@@ -144,6 +182,7 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
 
   render(): Component | Node {
     const match = this.findMatchingRoute();
+    console.log(match);
 
     // No match - render fallback (404)
     if (!match) {
@@ -172,6 +211,6 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
 
     // Create component instance with params
     // The component will receive RouterService via DI which has access to params
-    return <ComponentClass />;
+    return match.component;
   }
 }

@@ -8,7 +8,9 @@ import {
   RenderState,
 } from "@mini/core";
 import { ApiService } from "./Modal/services/ApiService";
+import { Route } from "@mini/router";
 
+// @Route({ path: "/loading-content", exact: true })
 export class LoadingContent extends Component {
   @Inject(ApiService) api!: ApiService;
 

@@ -1,5 +1,7 @@
 import { Component } from "@mini/core";
+import { Route } from "@mini/router";
 
+// @Route({ path: "", exact: true })
 export class Footer extends Component {
   render() {
     return (

@@ -87,6 +87,9 @@ export abstract class RenderableComponent extends ReactiveComponent {
 
     // Setup remaining lifecycle phases to execute reactively
     lifecycleManager.setupPlugins(this as any);
+
+    // Emit BeforeMount phase
+    this._emitPhase(LifecyclePhase.BeforeMount);
   }
 
   /**
