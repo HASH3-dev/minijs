@@ -8,8 +8,11 @@ import {
   PARENT_COMPONENT,
   RENDER_STATE,
 } from "../constants";
-import { GET_PARENT_INJECTOR, INJECTOR_TOKEN } from "../di";
-import { Injector } from "../di/Injector";
+import {
+  GET_PARENT_INJECTOR,
+  INJECTOR_TOKEN,
+} from "../resources/DenpendencyInjection";
+import { Injector } from "../resources/DenpendencyInjection/Injector";
 import { RenderState } from "../types";
 import { createElement, Fragment, jsx } from "../jsx";
 

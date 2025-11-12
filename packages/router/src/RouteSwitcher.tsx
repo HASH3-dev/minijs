@@ -3,17 +3,30 @@
  * Renders route components based on current path
  */
 
-import { Component, LifecyclePhase, PARENT_COMPONENT } from "@mini/core";
-import { Mount } from "@mini/core";
-import { router } from "./Router";
 import {
-  getRoutePath,
+  Child,
+  Component,
+  ComponentClass,
+  ElementType,
+  LifecyclePhase,
+  Provider,
+} from "@mini/core";
+import {
+  distinctUntilChanged,
+  filter,
+  map,
+  of,
+  switchMap,
+  takeUntil,
+} from "rxjs";
+import {
+  getAscenssorRoutePath,
   getRouteConfig,
   isRoute,
-  getAscenssorRoutePath,
 } from "./decorators/Route";
 import { findBestMatch } from "./RouteMatch";
-import { filter, takeUntil } from "rxjs";
+import { router } from "./Router";
+import { RouterService } from "./RouterService";
 
 /**
  * RouteSwitcher props
@@ -22,12 +35,12 @@ export interface RouteSwitcherProps {
   /**
    * Route components (must have @Route decorator)
    */
-  children?: any[];
+  children: () => ComponentClass[];
 
   /**
    * Fallback component for 404 (no route matched)
    */
-  fallback?: any;
+  fallback?: ElementType;
 }
 
 /**
@@ -72,14 +85,6 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
       });
   }
 
-  @Mount()
-  mount() {
-    console.log(
-      "RouteSwitcher mounted",
-      getAscenssorRoutePath(this),
-      getRoutePath(this[PARENT_COMPONENT] as any)
-    );
-  }
   /**
    * Extract route information from children
    */
@@ -99,9 +104,7 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
     }
 
     // Iterate through children
-    const children = Array.isArray(this.children)
-      ? this.children
-      : [this.children];
+    const children = this.children[0]();
 
     for (const child of children) {
       // Get the component class (could be instance or class)
@@ -111,24 +114,12 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
         continue;
       }
 
-      console.log({ child, ComponentClass }, isRoute(ComponentClass));
       // Check if it's a route component
       if (isRoute(ComponentClass)) {
         const config = getRouteConfig(ComponentClass);
         if (config) {
-          let path = config.path;
-          if (this.ascenssorRoutePath) {
-            path = [this.ascenssorRoutePath, path]
-              .join("/")
-              .replace(/(\/\/*)/g, "/")
-              .replace(/\/$/, "");
-          }
-          console.log({
-            ascenssor: this.ascenssorRoutePath,
-            component: child,
-            path,
-            exact: config.exact,
-          });
+          let path = this.getComponentPath(ComponentClass);
+
           routes.push({
             component: child,
             path,
@@ -141,12 +132,20 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
     return routes;
   }
 
+  private getComponentPath(ComponentClass: Component): string {
+    const config = getRouteConfig(ComponentClass);
+
+    return [this.ascenssorRoutePath, config?.path]
+      .join("/")
+      .replace(/(\/\/*)/g, "/")
+      .replace(/\/$/, "");
+  }
+
   /**
    * Find matching route for current path
    */
   private findMatchingRoute() {
     const routes = this.extractRoutes();
-    console.log({ routes });
 
     if (routes.length === 0) {
       return null;
@@ -180,37 +179,71 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
     };
   }
 
-  render(): Component | Node {
-    const match = this.findMatchingRoute();
-    console.log(match);
+  render() {
+    return router.route$.pipe(
+      map((route) => route.path),
+      distinctUntilChanged(),
+      map(() => {
+        const { component, params } = this.findMatchingRoute() ?? {};
 
-    // No match - render fallback (404)
-    if (!match) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
+        const path = [
+          component?._instanceId ?? component?.name,
+          JSON.stringify(params),
+        ].join("-");
 
-      // Default 404
-      return (
-        <div style="padding: 20px; text-align: center;">
-          <h1>404 - Not Found</h1>
-          <p>The page you are looking for does not exist.</p>
-        </div>
-      );
-    }
+        return path;
+      }),
+      distinctUntilChanged(),
+      switchMap((route) => {
+        // if (!route) {
+        //   return of(false);
+        // }
 
-    // Render matched component
-    const ComponentClass =
-      typeof match.component === "function"
-        ? match.component
-        : match.component?.constructor;
+        const match = this.findMatchingRoute();
 
-    if (!ComponentClass) {
-      return <div>Error: Invalid route component</div>;
-    }
+        // No match - render fallback (404)
+        if (!match) {
+          if (this.props.fallback !== undefined) {
+            return of(this.props.fallback);
+          }
 
-    // Create component instance with params
-    // The component will receive RouterService via DI which has access to params
-    return match.component;
+          // Default 404
+          return of(
+            <div style="padding: 20px; text-align: center;">
+              <h1>404 - Not Found</h1>
+              <p>The page you are looking for does not exist.</p>
+            </div>
+          );
+        }
+
+        // Render matched component
+        const ComponentClass =
+          typeof match.component === "function"
+            ? match.component
+            : match.component?.constructor;
+
+        if (!ComponentClass) {
+          return of(<div>Error: Invalid route component</div>);
+        }
+
+        // Create component instance with params
+        // The component will receive RouterService via DI which has access to params
+        return of(
+          <Provider
+            values={[
+              {
+                provide: RouterService,
+                useValue: new RouterService(
+                  match.component,
+                  match.params ?? {}
+                ),
+              },
+            ]}
+          >
+            <match.component />;
+          </Provider>
+        );
+      })
+    );
   }
 }

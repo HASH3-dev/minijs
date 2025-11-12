@@ -167,22 +167,11 @@ export const appendChildren = (
       });
       currentNodes = [];
 
-      // let parent = el;
-      // let parentInstance;
-      // while (parent) {
-      //   console.log("PARENT ==>>", parent);
-      //   if ((parent as any)[COMPONENT_INSTANCE]) {
-      //     parentInstance = (parent as any)[COMPONENT_INSTANCE];
-      //     break;
-      //   } else {
-      //     parent = parent.parentNode as any;
-      //   }
-      // }
-
       // Renderizar novo component
       const renderResult = Application.render(val, undefined, {
         parent: parentComponent,
       });
+      // renderResult.getComponent()?.replaceChild(renderResult.getNodes());
       renderResult.insertBefore(
         endMarker.parentNode! as HTMLElement,
         endMarker
@@ -210,8 +199,11 @@ export const appendChildren = (
             endMarker.parentNode! as HTMLElement,
             endMarker
           );
+
+          // renderResult.getComponent()?.replaceChild(renderResult.getNodes());
           currentNodes.push(...(renderResult.getNodes() as ChildNode[]));
           renderResult.appendTo(fragment as any);
+          // return;
         } else if (item instanceof Node) {
           fragment.appendChild(item);
           currentNodes.push(item as ChildNode);

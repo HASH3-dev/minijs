@@ -1,7 +1,7 @@
 import { Application } from "../Application";
 import { Component } from "../base/Component";
 import { PARENT_COMPONENT } from "../constants";
-import { getChildSlots } from "../decorators/Child";
+import { getChildSlots } from "../resources/Child";
 import { applyProps } from "./dom";
 import { processSlottedChildren } from "./slots";
 
@@ -72,7 +72,7 @@ export function createElement(type: any, props: any, parent: any): Node {
     // This ensures immutable parent assignment based on structure
 
     // Process children and populate @Child decorated properties
-    const childSlots = getChildSlots(type);
+    const childSlots = getChildSlots(componentInstance);
     if (childSlots && children) {
       const slottedChildren = processSlottedChildren(children);
 

@@ -1,10 +1,10 @@
 import { lifecycleManager } from "./LifecycleManager";
 import { StatefulRenderPlugin } from "./StatefulRenderPlugin";
-import { GuardDecoratorPlugin } from "../decorators/Guard/GuardPlugin";
-import { ResolverDecoratorPlugin } from "../decorators/Resolver/ResolverPlugin";
-import { MountDecoratorPlugin } from "../decorators/Mount/MountPlugin";
-import { WatchDecoratorPlugin } from "../decorators/Watch/WatchPlugin";
-import { UseProvidersPlugin } from "../decorators/UseProviders/UseProvidersPlugin";
+import { GuardDecoratorPlugin } from "../resources/Guard/GuardPlugin";
+import { ResolverDecoratorPlugin } from "../resources/Resolver/ResolverPlugin";
+import { MountDecoratorPlugin } from "../resources/Mount/MountPlugin";
+import { WatchDecoratorPlugin } from "../resources/Watch/WatchPlugin";
+import { UseProvidersPlugin } from "../resources/Provider/UseProvidersPlugin";
 
 /**
  * Register all default framework plugins

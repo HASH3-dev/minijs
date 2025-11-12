@@ -14,6 +14,7 @@ export class Router {
     this.getCurrentState()
   );
   private initialized = false;
+  private _params: Record<string, string> = {};
 
   /**
    * Observable of current route state
@@ -41,6 +42,23 @@ export class Router {
    */
   get currentHash(): string {
     return this.currentRoute$.value.hash;
+  }
+
+  set params(params: Record<string, string>) {
+    console.log("[Router] params changed", params);
+    if (JSON.stringify(this._params) === JSON.stringify(params)) {
+      return;
+    }
+
+    this._params = params || {};
+    this.currentRoute$.next({
+      ...this.currentRoute$.value,
+      params,
+    });
+  }
+
+  get params(): Record<string, string> {
+    return this._params || {};
   }
 
   /**
@@ -188,6 +206,7 @@ export class Router {
       path: window.location.pathname,
       query: this.parseQuery(window.location.search),
       hash: window.location.hash.slice(1), // Remove leading #
+      params: this.params,
     };
   }
 

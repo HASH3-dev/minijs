@@ -124,6 +124,9 @@ export abstract class RenderableComponent extends ReactiveComponent {
 
   _cleanupInstance() {
     const Application = require("../Application").Application;
+    //TODO: O router não limpa as instancias de componentes, só cria novas,
+    // isso bagunça a descoberta de dependeneciass
+    console.log("UNMOUNTING", this);
     Application.componentInstances.delete(this);
   }
 

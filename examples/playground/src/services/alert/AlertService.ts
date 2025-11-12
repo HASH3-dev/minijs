@@ -5,6 +5,9 @@ import { Alert } from "../../components/Alert";
 @Injectable()
 export class AlertService {
   alert(text: string) {
+    console.log("[AlertService] Adding alert", [
+      ...Application.componentInstances,
+    ]);
     const renderResult = Application.render(
       Alert,
       { name: text },

@@ -1,10 +1,18 @@
-import { BehaviorSubject, mergeMap, NEVER } from "rxjs";
+import {
+  BehaviorSubject,
+  catchError,
+  from,
+  map,
+  mergeMap,
+  NEVER,
+  startWith,
+} from "rxjs";
 import { Component } from "../base/Component";
 import { LifecyclePhase } from "../base/ReactiveComponent";
 import {
   LOAD_DATA_METHODS,
   LOAD_DATA_STATE,
-} from "../decorators/LoadData/constants";
+} from "../resources/LoadData/constants";
 import { toObservable } from "../helpers";
 import { RenderState } from "../types";
 import { DecoratorPlugin } from "./DecoratorPlugin";
@@ -66,6 +74,34 @@ export class StatefulRenderPlugin extends DecoratorPlugin {
               });
 
             result = renderMethod.apply(component, [data].flat());
+            if (result instanceof Promise) {
+              const loadrendersymbol = Symbol();
+              result = from(result).pipe(
+                startWith(loadrendersymbol),
+                map((val) => {
+                  if (val === loadrendersymbol) {
+                    const renderMethod = this.getRenderMethod(
+                      component,
+                      RenderState.LOADING
+                    );
+                    return (
+                      renderMethod?.apply(component, [data].flat()) ?? null
+                    );
+                  }
+
+                  return val;
+                }),
+                catchError((e) => {
+                  const renderMethod = this.getRenderMethod(
+                    component,
+                    RenderState.ERROR
+                  );
+                  return (
+                    renderMethod?.apply(component, [e, data].flat()) ?? null
+                  );
+                })
+              );
+            }
           }
 
           // If result is Observable, return it directly (switchMap will flatten)

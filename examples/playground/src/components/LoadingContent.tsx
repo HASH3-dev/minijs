@@ -8,20 +8,15 @@ import {
   RenderState,
 } from "@mini/core";
 import { ApiService } from "./Modal/services/ApiService";
-import { Route } from "@mini/router";
+import { Route, RouterService, RouteSwitcher } from "@mini/router";
+import { map } from "rxjs";
 
-// @Route({ path: "/loading-content", exact: true })
+@Route("/loading-content")
 export class LoadingContent extends Component {
   @Inject(ApiService) api!: ApiService;
+  @Inject(RouterService) router!: RouterService;
 
   years = "years";
-  // userName = signal<string | null>(null);
-  // userAge = signal<number | null>(null);
-
-  // loadUserData() {
-  //   this.loadUserName().then((e) => this.userName.next(e));
-  //   this.loadUserAge().then((e) => this.userAge.next(e));
-  // }
 
   @Mount()
   @LoadData({ label: "Name", isEmpty: (e: string | null | undefined) => !e })
@@ -40,7 +35,7 @@ export class LoadingContent extends Component {
     return new Promise<number>((resolve) => {
       setTimeout(() => {
         resolve(37);
-      }, 1500);
+      }, 3000);
     });
   }
 
@@ -79,15 +74,19 @@ export class LoadingContent extends Component {
     transformParams: (e, _) => [e, _.years],
   })
   async ageSuccessFragment(data: any, unit: string) {
-    console.log(
-      "fetch async request on success age fragment",
-      await this.api.fetchUsers()
-    );
+    // console.log(
+    //   "fetch async request on success age fragment",
+    //   await this.api.fetchUsers()
+    // );
     return (
       <span className="font-bold text-red-500">
         {data} {unit}
       </span>
     );
+  }
+
+  renderLoading() {
+    return <div>Loading...</div>;
   }
 
   async render() {
@@ -118,6 +117,74 @@ export class LoadingContent extends Component {
             Load Age
           </button>
         </div>
+        <RouteSwitcher
+          fallback={
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-5"
+              onClick={() =>
+                this.router.push("/another/loading-content/1231231")
+              }
+            >
+              Mudar
+            </button>
+          }
+        >
+          {() => [ParamRouterComponent, RouterComponent]}
+        </RouteSwitcher>
+      </div>
+    );
+  }
+}
+
+@Route("/:id")
+class ParamRouterComponent extends Component {
+  @Inject(RouterService) router!: RouterService;
+
+  @Mount()
+  log() {
+    console.log(this.router);
+  }
+
+  render() {
+    return (
+      <div>
+        <p>Oi fulano {this.router.params$.pipe(map((e) => e.id))}</p>
+
+        <div className="flex gap-2 mt-4">
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => this.router.push("/another/loading-content")}
+          >
+            Um acima
+          </button>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() =>
+              this.router.push("/another/loading-content/8979854769568")
+            }
+          >
+            Um ao lado
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
+@Route("/")
+class RouterComponent extends Component {
+  @Inject(RouterService) router!: RouterService;
+
+  render() {
+    return (
+      <div>
+        <p>Oi sem param</p>
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => this.router.push("/")}
+        >
+          Voltar
+        </button>
       </div>
     );
   }

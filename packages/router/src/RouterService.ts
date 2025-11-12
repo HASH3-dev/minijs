@@ -7,17 +7,19 @@ import { Injectable, InjectionScope } from "@mini/core";
 import { router } from "./Router";
 import { map } from "rxjs";
 import type { Component } from "@mini/core";
+import { getAscenssorRoutePath } from "./decorators/Route";
 
 @Injectable({ scope: InjectionScope.BY_COMPONENT })
 export class RouterService {
-  private component: Component;
-
   /**
    * Constructor receives the component instance
    * This is automatically injected by the DI system for BY_COMPONENT scoped services
    */
-  constructor(component: Component) {
-    this.component = component;
+  constructor(
+    private component: Component,
+    private _params: Record<string, string>
+  ) {
+    router.params = this._params;
   }
 
   /**
@@ -27,7 +29,7 @@ export class RouterService {
   get params(): Record<string, string> {
     // TODO: Extract from component's route metadata
     // For now, return empty object
-    return {};
+    return this._params;
   }
 
   /**
@@ -87,17 +89,10 @@ export class RouterService {
   }
 
   /**
-   * Get a specific segment from the path
-   * @param index Segment index (0-based)
-   * @example
-   * // For path "/user/123/profile"
-   * getSegment(0) // "user"
-   * getSegment(1) // "123"
-   * getSegment(2) // "profile"
+   * Get the specific segment path that render this component
    */
   getSegment(index: number): string | undefined {
-    const segments = router.currentPath.split("/").filter((s) => s.length > 0);
-    return segments[index];
+    return getAscenssorRoutePath(this.component);
   }
 
   /**

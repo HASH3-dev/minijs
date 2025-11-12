@@ -27,16 +27,16 @@ import "./lifecycle/registerDefaultPlugins"; // Auto-register default plugins
 
 // Component
 export { Component, RenderStateValues } from "./base/Component";
-export { Provider } from "./ProviderComponent";
 
 // Decorators
-export * from "./decorators/Mount";
-export * from "./decorators/Watch";
-export * from "./decorators/Child";
-export * from "./decorators/Guard";
-export * from "./decorators/Resolver";
-export * from "./decorators/UseProviders";
-export * from "./decorators/LoadData";
+export * from "./resources/Mount";
+export * from "./resources/Watch";
+export * from "./resources/Child";
+export * from "./resources/Guard";
+export * from "./resources/Resolver";
+export * from "./resources/Provider";
+export * from "./resources/LoadData";
+export * from "./resources/Lazy";
 
 // Helpers
 export * from "./helpers";
@@ -51,16 +51,21 @@ export type {
 } from "./Application";
 
 // Dependency Injection
-export { Injectable, Inject, Injector, validateDependencyGraph } from "./di";
-export { InjectionScope } from "./di";
+export {
+  Injectable,
+  Inject,
+  Injector,
+  validateDependencyGraph,
+} from "./resources/DenpendencyInjection";
+export { InjectionScope } from "./resources/DenpendencyInjection";
 export type {
   Token,
   Provider as DIProvider,
   ProviderShorthand,
   InjectableOptions,
-} from "./di";
+} from "./resources/DenpendencyInjection";
 
 // JSX
 export { jsx, jsxs, jsxDEV, Fragment } from "./jsx";
 
-export * from "./types";
+export { ElementType, RenderState, ChildType } from "./types";

@@ -7,7 +7,7 @@ import {
   UseProviders,
 } from "@mini/core";
 import { Route } from "@mini/router";
-import { interval, map, tap } from "rxjs";
+import { interval, map, take, tap } from "rxjs";
 import { CounterJSX } from "./components/CounterJSX";
 import { DIExample } from "./components/DIExample";
 import { LoadingContent } from "./components/LoadingContent";
@@ -17,8 +17,8 @@ import { Header } from "./components/Modal/Header";
 import { Todo } from "./components/Todo";
 import { AlertService } from "./services/alert/AlertService";
 
+@Route("/")
 @UseProviders([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
-// @Route({ path: "/", exact: true })
 export class App extends Component {
   private name = signal("mini");
   private counter = signal(0);
@@ -56,6 +56,7 @@ export class App extends Component {
   @Mount()
   onMount2() {
     console.log("App mounted 2");
+    return () => console.log("App destroyed");
   }
 
   addItem() {
@@ -85,8 +86,8 @@ export class App extends Component {
               </p>
               <p class="text-slate-600">It goes into the default slot.</p>
               <LoadingContent />
-              <Header slot="header" />
               <Footer slot="footer" />
+              <Header slot="header" />
             </Modal>
           </div>
 
@@ -157,15 +158,6 @@ export class App extends Component {
                     </p>
                     <p class="text-lg font-mono text-purple-600">
                       [{this.list}]
-                    </p>
-                  </div>
-
-                  <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <p class="text-sm font-medium text-green-700 mb-1">
-                      Dynamic Array
-                    </p>
-                    <p class="text-lg font-mono text-green-600">
-                      [{this.teste}]
                     </p>
                   </div>
                 </div>

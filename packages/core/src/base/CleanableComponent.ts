@@ -34,7 +34,7 @@ export abstract class CleanableComponent extends RenderableComponent {
         return;
       }
 
-      (node as any)[COMPONENT_INSTANCE] = this;
+      (node as any)[COMPONENT_INSTANCE] ??= this;
 
       if (node.nodeType === Node.COMMENT_NODE) {
         if (this._childrenMetadataTags.has((node as Comment).data)) return;
@@ -92,9 +92,10 @@ export abstract class CleanableComponent extends RenderableComponent {
   replaceChild(newNode: Node | Node[]): void {
     const newNodes = this.normalizeNodes(newNode);
 
-    this._childrenRendered.forEach((node) => {
-      (node as ChildNode).remove();
-    });
+    this.getRange().deleteContents();
+    // this._childrenRendered.forEach((node) => {
+    //   (node as ChildNode).remove();
+    // });
 
     this.childrenNodes = this.childrenNodes.filter(
       (node) => !this._childrenRendered.has(node)
@@ -105,6 +106,34 @@ export abstract class CleanableComponent extends RenderableComponent {
     this.addNode(newNodes);
 
     (this.getPlaceholderNode() as ChildNode)?.after(...newNodes);
+  }
+
+  getRange() {
+    const range = new Range();
+    const start = this.getPlaceholderNode() as ChildNode;
+    const end = [...this._childrenMetadata].find((node) =>
+      (node as Comment).data.endsWith("-end")
+    );
+    range.setStart(start.nextSibling!, 0);
+    range.setEnd(end as ChildNode, 0);
+
+    let next = start.nextSibling!;
+    const nodes: ChildNode[] = [];
+    while (next && next !== end) {
+      console.log(next);
+      nodes.push(next);
+      next = next.nextSibling!;
+    }
+
+    return {
+      deleteContents: () => {
+        nodes.forEach((node) => {
+          node?.remove();
+        });
+      },
+    };
+    // start.nextSibling
+    // return range;
   }
 
   /**

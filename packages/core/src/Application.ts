@@ -11,8 +11,8 @@ import {
   PARENT_COMPONENT,
   SUBSCRIPTIONS,
 } from "./constants";
-import { getChildSlots } from "./decorators/Child";
-import { validateDependencyGraph } from "./di";
+import { getChildSlots } from "./resources/Child";
+import { validateDependencyGraph } from "./resources/DenpendencyInjection";
 import { toObservable } from "./helpers";
 import { RenderResult } from "./RenderResult";
 
@@ -342,7 +342,7 @@ export class Application {
 
               // Attach unmount detection if not already done
               if (!(node as any)[MUTATION_OBSERVER]) {
-                this.attachUnmountDetection(node, component);
+                // this.attachUnmountDetection(node, component);
               }
             });
 
@@ -362,12 +362,15 @@ export class Application {
             const processed = this.processRenderedTree(value, component);
 
             [processed].flat().forEach((node) => {
-              Application.exchangeComponentMetadata(
-                component.getRenderedNodes()[0],
-                node
-              );
+              // Application.exchangeComponentMetadata(
+              //   component.getRenderedNodes()[0],
+              //   node
+              // );
               // Cache and attach metadata
               (component as any)[DOM_CACHE] = node;
+              if (!(node as any)[MUTATION_OBSERVER]) {
+                // this.attachUnmountDetection(node, component);
+              }
             });
 
             component.replaceChild(processed);
@@ -520,7 +523,7 @@ export class Application {
     };
 
     // Render children via @Child decorated properties
-    const childSlots = getChildSlots(component.constructor);
+    const childSlots = getChildSlots(component);
     if (childSlots) {
       childSlots.forEach((propertyKey) => {
         const child = (component as any)[propertyKey];
@@ -611,7 +614,7 @@ export class Application {
           (removed as any)[SUBSCRIPTIONS]?.forEach((sub: Subscription) =>
             sub.unsubscribe()
           );
-          if (removed === node || removed.contains(node)) {
+          if (removed === node) {
             observer.disconnect();
             (node as any)[COMPONENT_INSTANCE]?.destroy();
           }
@@ -619,17 +622,18 @@ export class Application {
       });
     });
 
-    let parent: ParentNode | null = node.parentNode;
-    while (parent) {
-      if ((parent as any)["observed"]) break;
-      observer.observe(parent, { childList: true });
+    // let parent: Node | null = node;
+    observer.observe(node.parentNode, { childList: true });
+    // while (parent) {
+    //   if ((parent as any)["observed"]) break;
+    //   observer.observe(parent, { childList: true });
 
-      // if ((parent as any)[COMPONENT_INSTANCE]) {
-      //   instance[PARENT_COMPONENT] ??= (parent as any)[COMPONENT_INSTANCE];
-      // }
-      (parent as any)["observed"] = true;
-      parent = parent.parentNode;
-    }
+    //   // if ((parent as any)[COMPONENT_INSTANCE]) {
+    //   //   instance[PARENT_COMPONENT] ??= (parent as any)[COMPONENT_INSTANCE];
+    //   // }
+    //   (parent as any)["observed"] = true;
+    //   parent = parent.parentNode;
+    // }
 
     (node as any)[MUTATION_OBSERVER] = observer;
   }

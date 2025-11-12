@@ -5,17 +5,14 @@ import { Footer } from "./components/Modal/Footer";
 import { ApiService } from "./components/Modal/services/ApiService";
 import { MODAL } from "./components/Modal/constants";
 
-@Route({ path: "/another" })
-@UseProviders([ApiService, { provide: MODAL, useValue: true }])
+@Route("/another")
+@UseProviders([{ provide: MODAL, useValue: true }, ApiService])
 export class AnotherScreen extends Component {
   render() {
     return (
       <div>
         <h1>Another Screen</h1>
-        <RouteSwitcher>
-          <LoadingContent />
-          <Footer />
-        </RouteSwitcher>
+        <RouteSwitcher>{() => [LoadingContent, Footer]}</RouteSwitcher>
       </div>
     );
   }

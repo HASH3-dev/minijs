@@ -19,7 +19,7 @@ export class Modal extends Component {
   }
 
   render() {
-    console.log("Modal render");
+    // console.log("Modal render", this.header.childrenNodes);
     return (
       <>
         <div class="bg-white rounded-2xl shadow-xl border-2 border-slate-300 overflow-hidden">
