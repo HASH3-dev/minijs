@@ -10,8 +10,10 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "@mini/jsx",
+    "jsxImportSource": "@mini/core",
+    "jsxFragmentFactory": "Fragment",
+    "jsxFactory": "this.jsx",
+    "jsx": "preserve",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   }

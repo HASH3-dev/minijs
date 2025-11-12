@@ -1,5 +1,5 @@
-import { Component, signal, unwrap } from "@mini/core";
-import { Inject, Provide } from "@mini/di";
+import { Component, signal, unwrap, Watch } from "@mini/core";
+import { Inject } from "@mini/core";
 import { map } from "rxjs";
 import { AlertService } from "../services/alert/AlertService";
 
@@ -55,6 +55,11 @@ export class Todo extends Component {
 
   setText(text: string) {
     this.text.next(text);
+  }
+
+  @Watch("list")
+  onListChange(list: TodoItem[]) {
+    console.log(list);
   }
 
   render() {

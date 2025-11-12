@@ -1,0 +1,1 @@
+export { getChildSlots } from "./getChildSlots";

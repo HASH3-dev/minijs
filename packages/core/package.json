@@ -10,6 +10,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
@@ -17,7 +27,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@mini/di": "*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

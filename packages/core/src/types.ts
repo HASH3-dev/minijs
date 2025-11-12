@@ -1,10 +1,28 @@
-import { Subject } from "rxjs";
-
-export type UnmountLike = Subject<void>;
-
 /**
  * Metadata key for storing child slot information
  */
-export const CHILD_METADATA_KEY = Symbol("__mini_child_slots");
 
-export type ChildType = Node | string | number | boolean | null | undefined;
+import { Component } from "./base/Component";
+
+/**
+ * Enum for component render states
+ * Used by Resolvers, LoadData, and other async operations
+ */
+export enum RenderState {
+  IDLE = "idle",
+  LOADING = "loading",
+  SUCCESS = "success",
+  ERROR = "error",
+  EMPTY = "empty",
+}
+
+export type ChildType =
+  | Node
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Component;
+
+export type ElementType = ChildType;

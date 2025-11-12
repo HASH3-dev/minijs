@@ -1,9 +1,45 @@
-import { Component } from "@mini/core";
-import { Inject } from "@mini/di";
+import { Component, Resolver, UseResolvers } from "@mini/core";
+import { Inject, Injectable } from "@mini/core";
 import { ThemeService } from "../services/theme/ThemeService.Abstract";
+import { BehaviorSubject, from, map, Observable } from "rxjs";
 
+interface User {
+  id: number;
+  name: string;
+}
+
+@Injectable()
+class UserResolver implements Resolver<User | null> {
+  resolve(): Observable<User | null> {
+    return from<Promise<User | null>>(
+      new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // resolve(null);
+          resolve({ id: 1, name: "John Doe" });
+          // reject(new Error("User not found"));
+        }, 3000);
+      })
+    );
+  }
+}
+
+@UseResolvers([UserResolver])
 export class ThemedCard extends Component {
   @Inject(ThemeService) theme!: ThemeService;
+
+  @Inject(UserResolver) user!: BehaviorSubject<User | null>;
+
+  renderLoading() {
+    return <div>Loading...</div>;
+  }
+
+  renderError() {
+    return <div>Error loading user</div>;
+  }
+
+  renderEmpty() {
+    return <div>No user found</div>;
+  }
 
   render() {
     const cardClass = this.theme.getCardClass();
@@ -16,6 +52,7 @@ export class ThemedCard extends Component {
         <p class={`mb-4 ${textClass}`}>
           This card uses the injected ThemeService to determine its styling.
         </p>
+        <p>Hello {this.user.pipe(map((user) => user?.name))}</p>
         <div class="space-y-2">
           <div class={`p-3 rounded-lg border ${buttonClass}`}>
             <p class="text-sm font-medium">
