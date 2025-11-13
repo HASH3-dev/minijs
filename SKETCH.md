@@ -124,14 +124,16 @@ export class Chart1 extends Component {
   handleFilterChange() {
     this.filters.pipe(
       takeUntil(this.$.unmount$),
+      debounceTime(1000),
+      distinctUntilChanged(),
       switchMap(filters => this.fetchData(filters)),
       tap(data => this.data.next(data))
     ).subscribe();
   }
 
-  @Watch('filters') // forma 2 de se fazer
-  async handleFilterChange() {
-    const data = await this.fetchData(this.filters);
+  @Watch('filters', [debounceTime(1000), distinctUntilChanged()]) // forma 2 de se fazer
+  async handleFilterChange(filters: FiltersState) {
+    const data = await this.fetchData(filters);
     this.data.next(data);
   }
 
