@@ -330,7 +330,7 @@ export class SalesDashboard extends Component {
   // WebSocket real-time - apenas atualiza o número, não re-renderiza tudo
   @Mount()
   setupRealTime() {
-    return this.sales.streamLiveUpdates() // Ao retornar um Observable no Mount ele a excecussão de o cleanup são feitos automáticamente
+    return this.sales.streamLiveUpdates() // Ao retornar um Observable no Mount, a execução e o cleanup são feitos automaticamente
       .subscribe(update => {
         // Atualiza APENAS este signal, não todo o componente
         this.liveSales.next(update.total);
@@ -1287,53 +1287,185 @@ render() {
 
 ### Vindo do React
 
-```typescript
-// ❌ React
-function Counter() {
-  const [count, setCount] = useState(0);
+React usa Context API para compartilhar estado, mas tem limitações significativas.
 
-  console.log('Counter re-rendered'); // Vai ser executado em todos os re-renders
+```typescript
+// ❌ REACT - Context API verbose e sem type safety real
+// 1. Criar o Context
+const ApiContext = createContext<ApiService | null>(null);
+
+// 2. Provider no root
+function App() {
+  const apiService = useMemo(() => new ApiService(), []); // ⚠️ Precisa useMemo
+
+  return (
+    <ApiContext.Provider value={apiService}>
+      <Dashboard />
+    </ApiContext.Provider>
+  );
+}
+
+// 3. Hook customizado para type safety
+function useApi() {
+  const context = useContext(ApiContext);
+  if (!context) {
+    throw new Error('useApi must be used within ApiProvider'); // ⚠️ Runtime error!
+  }
+  return context;
+}
+
+// 4. Consumer
+function Dashboard() {
+  const api = useApi();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCount(c => c + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    api.fetchData()
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, [api]);
 
-  return <div>{count}</div>;
+  if (loading) return <div>Loading...</div>;
+  return <div>{data?.title}</div>;
 }
+
+// ⚠️ Problemas:
+// - Verbose: Context + Provider + Hook customizado
+// - Sem hierarquia: um Context por serviço
+// - Sem abstrações: não pode injetar interface
+// - Difícil testar: precisa wrapper em todos os testes
 ```
 
 ```typescript
-// ✅ Mini
-export class Counter extends Component {
-  count = signal(0);
+// ✅ MINI - DI hierárquico e type-safe
+// 1. Definir o serviço
+@Injectable()
+class ApiService {
+  fetchData() {
+    return fetch('/api/data').then(r => r.json());
+  }
+}
+
+// 2. Prover no componente root (ou em qualquer nível)
+@Route('/dashboard')
+@UseProviders([ApiService])  // ✅ Declarativo
+export class Dashboard extends Component {
+  @Inject(ApiService) api!: ApiService;  // ✅ Type-safe!
 
   @Mount()
-  startCounter() {
-    const interval = setInterval(() => {
-      this.count.next(this.count.value + 1);
-    }, 1000);
-    return () => clearInterval(interval);
+  @LoadData({ label: 'Data' })
+  loadData() {
+    return this.api.fetchData();
   }
 
   render() {
-    return <div>{
-      /** Somente estre trecho re-renderiza */
-      this.count
-    }</div>;
+    return (
+      <div>
+        <Loader fragment="Data" />
+      </div>
+    );
+  }
+
+  renderLoading() {
+    return <div>Loading...</div>;
   }
 }
+
+// ✅ Vantagens:
+// - Type-safe em compile time
+// - Zero boilerplate
+// - DI hierárquico automático
+// - Suporta abstrações (interfaces)
+// - Fácil mockar em testes
+```
+
+**Comparação: Abstrações e Testes**
+
+```typescript
+// ❌ REACT - Difícil usar abstrações
+abstract class PaymentService {
+  abstract processPayment(amount: number): Promise<void>;
+}
+
+// ⚠️ Context não suporta abstrações bem
+const PaymentContext = createContext<PaymentService | null>(null);
+
+function App() {
+  // ⚠️ Precisa escolher implementação no root
+  const payment = useMemo(() => new StripePayment(), []);
+  return (
+    <PaymentContext.Provider value={payment}>
+      <CheckoutForm />
+    </PaymentContext.Provider>
+  );
+}
+
+// ⚠️ Testar requer wrapper complexo
+test('checkout form', () => {
+  const mockPayment = new MockPaymentService();
+  render(
+    <PaymentContext.Provider value={mockPayment}>
+      <CheckoutForm />
+    </PaymentContext.Provider>
+  );
+});
+```
+
+```typescript
+// ✅ MINI - Abstrações naturais
+abstract class PaymentService {
+  abstract processPayment(amount: number): Promise<void>;
+}
+
+@Injectable()
+class StripePayment extends PaymentService {
+  async processPayment(amount: number) {
+    // Implementação Stripe
+  }
+}
+
+// ✅ Prover abstração
+@Route('/checkout')
+@UseProviders([
+  { provide: PaymentService, useClass: StripePayment }
+])
+export class CheckoutPage extends Component {
+  render() {
+    return <CheckoutForm />;
+  }
+}
+
+// ✅ Consumir abstração
+export class CheckoutForm extends Component {
+  @Inject(PaymentService) payment!: PaymentService;
+
+  async handleSubmit() {
+    await this.payment.processPayment(100);
+  }
+}
+
+// ✅ Testar é trivial - troque a implementação
+@UseProviders([
+  { provide: PaymentService, useClass: MockPaymentService }
+])
+
+// ou com componente Provide
+<Provide values={[
+  { provide: PaymentService, useClass: MockPaymentService }
+]}>
+  <CheckoutForm />
+</Provide>
 ```
 
 **Principais diferenças:**
-- ✅ Sem hooks - use decorators
-- ✅ Sem useState - use signal()
-- ✅ Sem useEffect - use @Mount() ou @Watch()
-- ✅ Sem useCallback - métodos são estáveis
-- ✅ Sem useMemo - use RxJS pipes
-- ✅ Sem useContext - use @Inject()
+- ✅ DI type-safe vs Context API verbose
+- ✅ Compile-time errors vs runtime errors
+- ✅ DI hierárquico vs Context flat
+- ✅ Abstrações naturais vs difícil com Context
+- ✅ Testes simples vs wrappers complexos
+- ✅ Decorators vs hooks + useMemo
+- ✅ Zero boilerplate vs Provider + Hook + useContext
 
 ### Vindo do Angular
 
