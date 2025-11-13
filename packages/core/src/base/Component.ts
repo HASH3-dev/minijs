@@ -22,6 +22,10 @@ export interface RenderStateValues {
   label?: string | symbol;
 }
 
+export interface ICompomponet {
+  [key: string | symbol]: any;
+}
+
 /**
  * Base Component class with generic props support
  * Props must be accessed via this.props.[propName]
@@ -29,9 +33,10 @@ export interface RenderStateValues {
  * Now extends CleanableComponent for better architecture,
  * but maintains 100% backward compatibility
  */
-export abstract class Component<
-  P extends Record<string, any> = {}
-> extends CleanableComponent {
+export abstract class Component<P extends Record<string, any> = {}>
+  extends CleanableComponent
+  implements ICompomponet
+{
   props!: Readonly<P & { slot?: string }>;
   children?: any;
 

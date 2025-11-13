@@ -9,6 +9,7 @@ import { LIFECYCLE_EXECUTED } from "../constants";
 export abstract class RenderableComponent extends ReactiveComponent {
   private _renderCache?: Node;
   private _cachedParent?: any;
+  private _cleaned = false;
 
   /**
    * Main render method - must be implemented
@@ -123,11 +124,15 @@ export abstract class RenderableComponent extends ReactiveComponent {
   }
 
   _cleanupInstance() {
+    if (this._cleaned) {
+      return;
+    }
+
     const Application = require("../Application").Application;
     //TODO: O router não limpa as instancias de componentes, só cria novas,
     // isso bagunça a descoberta de dependeneciass
-    console.log("UNMOUNTING", this);
     Application.componentInstances.delete(this);
+    this._cleaned = true;
   }
 
   /**

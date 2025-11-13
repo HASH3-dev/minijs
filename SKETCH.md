@@ -16,10 +16,12 @@ export class App extends Component {
   render() {
     return (
       <RouteSwitcher>
-        <LandingPage />
-        <LoginPage />
-        <RegisterPage />
-        <LoggedArea />
+        {() => [
+          LandingPage,
+          LoginPage,
+          RegisterPage,
+          LoggedArea
+        ]}
       </RouteSwitcher>
     );
   }
@@ -96,9 +98,11 @@ export class DashboardPage extends Component {
       <Sidebar />
       <MainContent>
         <RouteSwitcher>
-          <Chart1 />
-          <Chart2 />
-          <Chart3 />
+          {() => [
+            Chart1,
+            Chart2,
+            Chart3,
+          ]}
         </RouteSwitcher>
       </MainContent>
     </main>
