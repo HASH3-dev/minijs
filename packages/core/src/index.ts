@@ -37,6 +37,7 @@ export * from "./resources/Resolver";
 export * from "./resources/Provider";
 export * from "./resources/LoadData";
 export * from "./resources/Lazy";
+export * from "./resources/PersistentState";
 
 // Helpers
 export * from "./helpers";

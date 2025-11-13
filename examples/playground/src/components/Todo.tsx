@@ -1,4 +1,12 @@
-import { Component, signal, unwrap, Watch } from "@mini/core";
+import {
+  Component,
+  PersistentSate,
+  signal,
+  unwrap,
+  URLTransformers,
+  UseURLStorage,
+  Watch,
+} from "@mini/core";
 import { Inject } from "@mini/core";
 import { map } from "rxjs";
 import { AlertService } from "../services/alert/AlertService";
@@ -13,7 +21,12 @@ export class Todo extends Component {
   @Inject(AlertService) alertService!: AlertService;
 
   private text = signal("");
-  private list = signal<TodoItem[]>([]);
+  @PersistentSate(
+    new UseURLStorage({
+      transformer: URLTransformers.propertyAsKeyArrayValuesAsJSON(),
+    })
+  )
+  list = signal<TodoItem[]>([]);
 
   addItem() {
     const text = unwrap(this.text);
