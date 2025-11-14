@@ -12,18 +12,19 @@
       "require": "./dist/index.cjs"
     },
     "./jsx-runtime": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/jsx-runtime.d.ts",
+      "import": "./dist/jsx-runtime.js",
+      "require": "./dist/jsx-runtime.cjs"
     },
     "./jsx-dev-runtime": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/jsx-runtime.d.ts",
+      "import": "./dist/jsx-runtime.js",
+      "require": "./dist/jsx-runtime.cjs"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --dts --format esm,cjs --sourcemap",
+    "build": "tsup src/index.ts --dts --format esm,cjs --sourcemap && npm run build:jsx-runtime",
+    "build:jsx-runtime": "node -e \"require('fs').writeFileSync('dist/jsx-runtime.js', 'export * from \\\"./index.js\\\";\\n'); require('fs').writeFileSync('dist/jsx-runtime.cjs', 'module.exports = require(\\\"./index.cjs\\\");\\n'); require('fs').writeFileSync('dist/jsx-runtime.d.ts', 'export * from \\\"./index.js\\\";\\n');\"",
     "test": "vitest run"
   },
   "dependencies": {
