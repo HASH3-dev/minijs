@@ -34,6 +34,26 @@ export class Counter extends Component {
 
 ---
 
+
+## 📦 Instalação (temporariamente)
+
+```bash
+npm link
+
+create-mini
+# deve dar um erro na hora da instalação, isso porque os pacotes ainda não foram publicados, então só continue.
+
+cd your_project
+
+npm link @mini/core @mini/router @mini/vite-plugin
+
+npm install
+
+npm run dev
+```
+
+---
+
 ## ⚡ Por Que Mini Framework?
 
 ### 🎯 **Reatividade Granular - Como SolidJS**
