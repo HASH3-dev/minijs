@@ -40,7 +40,14 @@ export interface RouteSwitcherProps {
   /**
    * Fallback component for 404 (no route matched)
    */
-  fallback?: ElementType;
+  fallback?: () =>
+    | string
+    | number
+    | boolean
+    | Node
+    | ComponentClass
+    | null
+    | undefined;
 }
 
 /**
@@ -48,10 +55,12 @@ export interface RouteSwitcherProps {
  * Matches current route and renders appropriate component
  *
  * @example
- * <RouteSwitcher fallback={<NotFoundPage />}>
- *   <HomePage />
- *   <AboutPage />
- *   <UserPage />
+ * <RouteSwitcher fallback={() => NotFoundPage}>
+ *   {() => [
+ *     HomePage,
+ *     AboutPage,
+ *     UserPage
+ *   ]}
  * </RouteSwitcher>
  */
 export class RouteSwitcher extends Component<RouteSwitcherProps> {
@@ -204,7 +213,7 @@ export class RouteSwitcher extends Component<RouteSwitcherProps> {
         // No match - render fallback (404)
         if (!match) {
           if (this.props.fallback !== undefined) {
-            return of(this.props.fallback);
+            return of(this.props.fallback());
           }
 
           // Default 404

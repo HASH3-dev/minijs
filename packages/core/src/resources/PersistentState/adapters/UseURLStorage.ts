@@ -1,7 +1,8 @@
-import { BehaviorSubject, skip, takeUntil, fromEvent, map } from "rxjs";
+import { fromEvent, skip, takeUntil } from "rxjs";
 import { Component } from "../../../base/Component";
-import { AbstractStorage } from "./AbstractStorage";
+import { Signal } from "../../Signal";
 import { PERSISTENT_STATE_ORIGINAL_SIGNAL } from "../constants";
+import { AbstractStorage } from "./AbstractStorage";
 
 interface URLStorageConfig {
   transformer?: {
@@ -11,9 +12,9 @@ interface URLStorageConfig {
 }
 
 export class UseURLStorage extends AbstractStorage {
-  signal!: BehaviorSubject<any>;
+  signal!: Signal<any>;
 
-  private orinalSignal!: BehaviorSubject<any>;
+  private orinalSignal!: Signal<any>;
   private componentInstance!: Component;
   private propertyName!: string | symbol;
 
@@ -39,7 +40,7 @@ export class UseURLStorage extends AbstractStorage {
       queryIsEmpty(q)
         ? this.orinalSignal.value
         : this.config.transformer!.deserialize(this.propertyName as string, q);
-    this.signal = new BehaviorSubject(defaultValue(queryObject));
+    this.signal = new Signal(defaultValue(queryObject));
 
     let isPopingState = false;
 

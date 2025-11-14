@@ -41,33 +41,30 @@ export class Todo extends Component {
       done: false,
     };
 
-    const prev = unwrap(this.list);
-    this.list.next([...prev, item]);
-    this.text.next("");
+    this.list.set((prev) => [...prev, item]);
+    this.text.set("");
   }
 
   removeItem(id: string) {
-    const prev = unwrap(this.list);
-    const updated = prev.filter((item) => item.id !== id);
-    this.list.next(updated);
+    this.list.set((prev) => prev.filter((item) => item.id !== id));
   }
 
   checkItem(id: string) {
-    const prev = unwrap(this.list);
-    const updated = prev.map((item) => {
-      if (item.id === id) {
-        return {
-          ...item,
-          done: !item.done,
-        };
-      }
-      return item;
-    });
-    this.list.next(updated);
+    this.list.set((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            done: !item.done,
+          };
+        }
+        return item;
+      })
+    );
   }
 
   setText(text: string) {
-    this.text.next(text);
+    this.text.set(text);
   }
 
   @Watch("list")
@@ -103,28 +100,22 @@ export class Todo extends Component {
             )
           )}
 
-          {this.list.pipe(
-            map((list) =>
-              list.map((item) => (
-                <li class="flex bg-slate-100 items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 w-full">
-                  <input
-                    type="checkbox"
-                    checked={item.done}
-                    onChange={() => this.checkItem(item.id)}
-                  />
-                  <span class={item.done ? "line-through" : ""}>
-                    {item.text}
-                  </span>
-                  <button
-                    onClick={() => this.removeItem(item.id)}
-                    class="ml-auto cursor-pointer text-red-500 hover:text-red-600"
-                  >
-                    x
-                  </button>
-                </li>
-              ))
-            )
-          )}
+          {this.list.map((item) => (
+            <li class="flex bg-slate-100 items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 w-full">
+              <input
+                type="checkbox"
+                checked={item.done}
+                onChange={() => this.checkItem(item.id)}
+              />
+              <span class={item.done ? "line-through" : ""}>{item.text}</span>
+              <button
+                onClick={() => this.removeItem(item.id)}
+                class="ml-auto cursor-pointer text-red-500 hover:text-red-600"
+              >
+                x
+              </button>
+            </li>
+          ))}
         </ul>
       </main>
     );

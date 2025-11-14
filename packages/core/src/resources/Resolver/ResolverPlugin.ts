@@ -20,7 +20,7 @@ import {
   INJECTOR_TOKEN,
   registerResolvedData,
 } from "../DenpendencyInjection";
-import { signal } from "../../helpers";
+import { signal } from "../Signal";
 import { DecoratorPlugin } from "../../lifecycle/DecoratorPlugin";
 import { RenderState } from "../../types";
 import { isClass } from "../../utils";

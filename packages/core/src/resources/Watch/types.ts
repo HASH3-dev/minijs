@@ -1,3 +1,5 @@
+import { OperatorFunction } from "rxjs";
+
 /**
  * Configuration for a watch decorator
  */
@@ -6,4 +8,6 @@ export interface WatchConfig {
   propertyName: string;
   /** Method to execute when the property changes */
   method: Function;
+  /** Array of RxJS pipes to apply to the observable */
+  pipes?: OperatorFunction<any, any>[];
 }

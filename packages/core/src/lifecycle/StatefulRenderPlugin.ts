@@ -1,19 +1,12 @@
-import {
-  BehaviorSubject,
-  catchError,
-  from,
-  map,
-  mergeMap,
-  NEVER,
-  startWith,
-} from "rxjs";
+import { catchError, from, map, mergeMap, NEVER, startWith } from "rxjs";
 import { Component } from "../base/Component";
 import { LifecyclePhase } from "../base/ReactiveComponent";
+import { toObservable } from "../helpers";
 import {
   LOAD_DATA_METHODS,
   LOAD_DATA_STATE,
 } from "../resources/LoadData/constants";
-import { toObservable } from "../helpers";
+import { signal } from "../resources/Signal";
 import { RenderState } from "../types";
 import { DecoratorPlugin } from "./DecoratorPlugin";
 
@@ -31,7 +24,7 @@ export class StatefulRenderPlugin extends DecoratorPlugin {
    * Overrides render() to return Observable that reacts to state changes
    */
   execute(component: Component): void {
-    (component as any)[LOAD_DATA_STATE] ??= new BehaviorSubject({});
+    (component as any)[LOAD_DATA_STATE] ??= signal({});
     // Store original render method
     let renderResult: any;
     const originalRender = component.render.bind(component);

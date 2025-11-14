@@ -41,14 +41,11 @@ export class App extends Component {
     }, 1000);
 
     return interval(5000).pipe(
-      // take(0),
+      take(0),
       // tap(() => console.log("tap")),
       tap(() => {
-        const counter = unwrap(this.counter);
-        const teste = unwrap(this.teste);
-
-        this.counter.next(counter + 1);
-        this.teste.next([...teste, counter]);
+        this.counter.set((counter) => counter + 1);
+        this.teste.set((teste) => [...teste, this.counter.value]);
       })
     );
   }
@@ -60,8 +57,7 @@ export class App extends Component {
   }
 
   addItem() {
-    const prev = unwrap(this.list);
-    this.list.next([...prev, prev.length + 1]);
+    this.list.set((prev) => [...prev, prev.length + 1]);
   }
 
   render() {
@@ -128,9 +124,9 @@ export class App extends Component {
 
               {/* Conditional Rendering */}
               <div>
-                {this.counter.pipe(
-                  map((counter) => counter % 2 === 0),
-                  map((bool) => bool && <CounterJSX name={this.name} />)
+                {this.counter.map(
+                  (counter) =>
+                    counter % 2 === 0 && <CounterJSX name={this.name} />
                 )}
               </div>
             </div>
@@ -168,15 +164,11 @@ export class App extends Component {
                   List Items
                 </h2>
                 <div class="space-y-2 mb-4">
-                  {this.list.pipe(
-                    map((list) =>
-                      list.map((item) => (
-                        <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
-                          Item: {item}
-                        </div>
-                      ))
-                    )
-                  )}
+                  {this.list.map((item) => (
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
+                      Item: {item}
+                    </div>
+                  ))}
                 </div>
                 <button
                   class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-md hover:shadow-lg"

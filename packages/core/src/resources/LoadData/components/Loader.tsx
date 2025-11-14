@@ -1,7 +1,8 @@
 import { Observable, distinctUntilChanged, map, mergeMap, tap } from "rxjs";
 import { Component } from "../../../base/Component";
 import { PARENT_COMPONENT } from "../../../constants";
-import { signal, toObservable } from "../../../helpers";
+import { toObservable } from "../../../helpers";
+import { signal } from "../../Signal";
 import { Mount } from "../../Mount";
 import { LOAD_DATA_STATE } from "../constants";
 

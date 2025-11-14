@@ -118,7 +118,7 @@ export class LoadingContent extends Component {
           </button>
         </div>
         <RouteSwitcher
-          fallback={
+          fallback={() => (
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-5"
               onClick={() =>
@@ -127,7 +127,7 @@ export class LoadingContent extends Component {
             >
               Mudar
             </button>
-          }
+          )}
         >
           {() => [ParamRouterComponent, RouterComponent]}
         </RouteSwitcher>

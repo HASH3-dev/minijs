@@ -1,4 +1,5 @@
 import { Component, signal, Watch } from "@mini/core";
+import { debounceTime } from "rxjs";
 
 /**
  * Example component demonstrating the @Watch decorator
@@ -48,8 +49,18 @@ export class WatchExample extends Component {
     this.lastMessageValue = value;
   }
 
+  @Watch("counter", [debounceTime(1000)])
+  @Watch("message")
+  combinedWatch(message: string, counter: number) {
+    console.log(
+      "[WatchExample] Counter and Message changed:",
+      message,
+      counter
+    );
+  }
+
   private incrementCounter = () => {
-    this.counter.next(this.counter.value + 1);
+    this.counter.set((prev) => prev + 1);
   };
 
   private updateMessage = () => {
@@ -60,7 +71,7 @@ export class WatchExample extends Component {
       "Mini Framework rocks!",
     ];
     const randomIndex = this.intemInArrayIncrement++ % messages.length;
-    this.message.next(messages[randomIndex]);
+    this.message.set(messages[randomIndex]);
   };
 
   render() {

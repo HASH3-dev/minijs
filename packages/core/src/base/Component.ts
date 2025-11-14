@@ -1,5 +1,4 @@
-import { BehaviorSubject, Subject } from "rxjs";
-import { CleanableComponent } from "./CleanableComponent";
+import { Subject } from "rxjs";
 import {
   CHILDREN_HIERARCHY,
   DOM_CACHE,
@@ -8,13 +7,15 @@ import {
   PARENT_COMPONENT,
   RENDER_STATE,
 } from "../constants";
+import { createElement } from "../jsx";
 import {
   GET_PARENT_INJECTOR,
   INJECTOR_TOKEN,
 } from "../resources/DenpendencyInjection";
 import { Injector } from "../resources/DenpendencyInjection/Injector";
+import { signal } from "../resources/Signal";
 import { RenderState } from "../types";
-import { createElement, Fragment, jsx } from "../jsx";
+import { CleanableComponent } from "./CleanableComponent";
 
 export interface RenderStateValues {
   state: RenderState;
@@ -119,7 +120,7 @@ export abstract class Component<P extends Record<string, any> = {}>
     mounted$: new Subject<void>(),
   };
 
-  private __render_state$ = new BehaviorSubject<RenderStateValues>({
+  private __render_state$ = signal<RenderStateValues>({
     state: RenderState.SUCCESS,
   });
 

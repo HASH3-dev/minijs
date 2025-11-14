@@ -10,17 +10,6 @@ export function toObservable<T>(v: T | Observable<T>): Observable<T> {
 }
 
 /**
- * Create a new BehaviorSubject (signal)
- */
-export const signal = <T>(val: T): BehaviorSubject<T> =>
-  new BehaviorSubject(val);
-
-/**
- * Get the current value from a BehaviorSubject
- */
-export const unwrap = <T>(val: BehaviorSubject<T>): T => val.value;
-
-/**
  * Check if a value is a primitive type
  */
 export function isPrimitive(value: any): boolean {
