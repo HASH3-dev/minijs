@@ -1,3 +1,4 @@
+import { OperatorFunction } from "rxjs";
 import { WATCH_PROPERTIES } from "../constants";
 import type { WatchConfig } from "../types";
 
@@ -23,7 +24,10 @@ import type { WatchConfig } from "../types";
  * }
  * ```
  */
-export function Watch(propertyName: string) {
+export function Watch(
+  propertyName: string,
+  pipes?: OperatorFunction<any, any>[]
+) {
   return function (
     target: any,
     methodName: string,
@@ -39,6 +43,7 @@ export function Watch(propertyName: string) {
     const config: WatchConfig = {
       propertyName,
       method: originalMethod,
+      pipes,
     };
 
     target[WATCH_PROPERTIES].push(config);

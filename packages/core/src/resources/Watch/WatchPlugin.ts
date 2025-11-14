@@ -3,7 +3,7 @@ import { Component } from "../../base/Component";
 import { WATCH_PROPERTIES } from "./constants";
 import type { WatchConfig } from "./types";
 import { LifecyclePhase } from "../../base/ReactiveComponent";
-import { takeUntil } from "rxjs";
+import { combineLatest, Observable, takeUntil } from "rxjs";
 
 /**
  * Plugin that sets up @Watch decorated property subscriptions
@@ -42,6 +42,8 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
       return;
     }
 
+    const methodsSubscriptions = new Map<string, Observable<any>[]>();
+
     // Setup each watcher
     for (const config of configs) {
       const observable = (component as any)[config.propertyName];
@@ -60,35 +62,29 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
         continue;
       }
 
-      try {
-        // Subscribe with automatic cleanup on unmount
-        const subscription = observable
-          .pipe(takeUntil(component.$.unmount$))
-          .subscribe((value: any) => {
-            try {
-              config.method.call(component, value);
-            } catch (error) {
-              console.error(
-                `[WatchPlugin] Error in watch handler for ${config.propertyName}:`,
-                error
-              );
-              component.emitError(error as Error);
-            }
-          });
+      const pipedObservable = observable.pipe(...(config.pipes ?? []));
 
-        // Register cleanup (belt and suspenders approach)
-        this.registerCleanup(component, () => {
-          if (subscription && !subscription.closed) {
-            subscription.unsubscribe();
-          }
-        });
-      } catch (error) {
-        console.error(
-          `[WatchPlugin] Error setting up watch for ${config.propertyName}:`,
-          error
-        );
-        component.emitError(error as Error);
+      if (methodsSubscriptions.has(config.method.name)) {
+        methodsSubscriptions.get(config.method.name)?.push(pipedObservable);
+      } else {
+        methodsSubscriptions.set(config.method.name, [pipedObservable]);
       }
     }
+
+    methodsSubscriptions.forEach((observables, methodName) => {
+      combineLatest(observables)
+        .pipe(takeUntil(component.$.unmount$))
+        .subscribe((values: any) => {
+          try {
+            (component as any)[methodName].apply(component, values);
+          } catch (error) {
+            console.error(
+              `[WatchPlugin] Error in watch handler for ${methodName}:`,
+              error
+            );
+            component.emitError(error as Error);
+          }
+        });
+    });
   }
 }

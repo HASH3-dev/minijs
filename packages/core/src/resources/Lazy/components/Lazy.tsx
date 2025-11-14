@@ -1,4 +1,4 @@
-import { signal } from "../../../helpers";
+import { signal } from "../../Signal";
 import { Component } from "../../../base/Component";
 import { map } from "rxjs";
 

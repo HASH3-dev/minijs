@@ -1,7 +1,13 @@
-import { Component, Resolver, UseResolvers } from "@mini/core";
-import { Inject, Injectable } from "@mini/core";
+import {
+  Component,
+  Inject,
+  Injectable,
+  Resolver,
+  Signal,
+  UseResolvers,
+} from "@mini/core";
+import { from, map, Observable } from "rxjs";
 import { ThemeService } from "../services/theme/ThemeService.Abstract";
-import { BehaviorSubject, from, map, Observable } from "rxjs";
 
 interface User {
   id: number;
@@ -27,7 +33,7 @@ class UserResolver implements Resolver<User | null> {
 export class ThemedCard extends Component {
   @Inject(ThemeService) theme!: ThemeService;
 
-  @Inject(UserResolver) user!: BehaviorSubject<User | null>;
+  @Inject(UserResolver) user!: Signal<User | null>;
 
   renderLoading() {
     return <div>Loading...</div>;

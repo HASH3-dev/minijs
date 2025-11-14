@@ -1,3 +1,4 @@
+import { signal } from "../resources/Signal";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 
 /**
@@ -24,9 +25,7 @@ export enum LifecyclePhase {
  * Emits lifecycle phases that plugins can subscribe to
  */
 export abstract class ReactiveComponent {
-  private _lifecycle$ = new BehaviorSubject<LifecyclePhase>(
-    LifecyclePhase.Created
-  );
+  private _lifecycle$ = signal<LifecyclePhase>(LifecyclePhase.Created);
   private _error$ = new Subject<Error>();
 
   /**

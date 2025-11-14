@@ -1,4 +1,4 @@
-import { takeUntil } from "rxjs";
+import { combineLatest, Observable, takeUntil } from "rxjs";
 import { WATCH_PROPERTIES } from "../constants";
 import type { WatchConfig } from "../types";
 
@@ -24,6 +24,8 @@ export function setupWatchers(instance: any) {
     return;
   }
 
+  const methodsSubscriptions = new Map<string, Observable<any>[]>();
+
   // Setup each watcher
   for (const config of watchConfigs) {
     const observable = instance[config.propertyName];
@@ -42,9 +44,23 @@ export function setupWatchers(instance: any) {
       continue;
     }
 
-    // Subscribe with automatic cleanup on unmount
-    observable.pipe(takeUntil(instance.$.unmount$)).subscribe((value: any) => {
-      config.method.call(instance, value);
-    });
+    const pipedObservable = observable.pipe(...(config.pipes ?? []));
+
+    if (methodsSubscriptions.has(config.method.name)) {
+      methodsSubscriptions.get(config.method.name)?.push(pipedObservable);
+    } else {
+      methodsSubscriptions.set(config.method.name, [pipedObservable]);
+    }
   }
+
+  alert(watchConfigs[0].method.name);
+
+  // Subscribe with automatic cleanup on unmount
+  methodsSubscriptions.forEach((observables, methodName) => {
+    combineLatest(observables)
+      .pipe(takeUntil(instance.$.unmount$))
+      .subscribe((values: any) => {
+        instance[methodName].apply(instance, values);
+      });
+  });
 }

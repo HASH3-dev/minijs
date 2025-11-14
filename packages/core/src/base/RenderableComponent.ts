@@ -1,7 +1,6 @@
-import { CHILDREN_HIERARCHY, PARENT_COMPONENT } from "../constants";
-import { ReactiveComponent, LifecyclePhase } from "./ReactiveComponent";
-import { lifecycleManager } from "../lifecycle/LifecycleManager";
 import { LIFECYCLE_EXECUTED } from "../constants";
+import { lifecycleManager } from "../lifecycle/LifecycleManager";
+import { LifecyclePhase, ReactiveComponent } from "./ReactiveComponent";
 
 /**
  * Adds rendering capabilities and caching

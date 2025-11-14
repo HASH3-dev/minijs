@@ -4,15 +4,13 @@
  */
 
 import { BehaviorSubject } from "rxjs";
-import { Injectable } from "@mini/core";
+import { Injectable, signal } from "@mini/core";
 import type { RouteState, NavigationOptions } from "./types";
 import { matchPath } from "./RouteMatch";
 
 @Injectable()
 export class Router {
-  private currentRoute$ = new BehaviorSubject<RouteState>(
-    this.getCurrentState()
-  );
+  private currentRoute$ = signal<RouteState>(this.getCurrentState());
   private initialized = false;
   private _params: Record<string, string> = {};
 
