@@ -38,7 +38,13 @@ export class Counter extends Component {
 ## 📦 Instalação (temporariamente)
 
 ```bash
+git clone git@github.com:HASH3-dev/minijs.git
+
+cd minijs
+
 npm link
+
+cd my_dev_folder
 
 create-mini
 # deve dar um erro na hora da instalação, isso porque os pacotes ainda não foram publicados, então só continue.
