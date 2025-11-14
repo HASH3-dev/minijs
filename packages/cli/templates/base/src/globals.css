@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Custom styles */
+@theme {
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+}
+
+body {
+  background: linear-gradient(to bottom right, var(--color-slate-50), var(--color-slate-100));
+  min-height: 100vh;
+}

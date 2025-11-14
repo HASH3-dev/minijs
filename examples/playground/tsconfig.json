@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsxImportSource": "@mini/core",
-    "jsxFragmentFactory": "Fragment",
-    "jsxFactory": "this.jsx",
-    "jsx": "preserve"
+    // "jsxImportSource": "@mini/core",
+    // "jsxFragmentFactory": "Fragment",
+    // "jsxFactory": "this.jsx",
+    // "jsx": "preserve"
   },
   "include": ["src"]
 }
