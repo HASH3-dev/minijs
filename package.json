@@ -7,20 +7,24 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run clean && npm run -w @mini/core build && npm run -w @mini/router build",
+    "build": "npm run clean && npm run -w @mini/core build && npm run -w @mini/router build && npm run -w @mini/vite-plugin build && npm run -w @mini/cli build",
     "build:core": "npm run -w @mini/core build",
     "build:router": "npm run -w @mini/router build",
+    "build:vite-plugin": "npm run -w @mini/vite-plugin build",
+    "build:cli": "npm run -w @mini/cli build",
     "clean": "rm -rf packages/*/dist",
     "rebuild": "npm run clean && npm run build",
     "predev": "npm run build",
     "dev": "npm run -w playground dev",
-    "test": "npm -ws run test"
+    "test": "npm -ws run test",
+    "link": "bash scripts/link-packages.sh",
+    "unlink": "bash scripts/unlink-packages.sh"
   },
   "devDependencies": {
-    "tsup": "^8.0.1",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.9",
     "@types/node": "^22.7.4",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.2"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "playground",
+  "name": "my-mini-app",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,17 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mini/core": "*",
-    "@mini/router": "*",
+    "@mini/core": "^0.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
-    "@mini/vite-plugin": "*",
-    "@tailwindcss/postcss": "^4.1.17",
-    "autoprefixer": "^10.4.22",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.17",
+    "@mini/vite-plugin": "^0.1.0",
     "typescript": "^5.9.3",
     "vite": "^7.2.2"
   }
