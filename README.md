@@ -47,7 +47,9 @@ npm link
 cd my_dev_folder
 
 create-mini
-# deve dar um erro na hora da instalação, isso porque os pacotes ainda não foram publicados, então só continue.
+# deve dar um erro na hora da instalação,
+# isso porque os pacotes ainda não foram publicados,
+# então só continue.
 
 cd your_project
 
