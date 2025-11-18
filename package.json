@@ -7,7 +7,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run clean && npm run -w @mini/core build && npm run -w @mini/router build && npm run -w @mini/vite-plugin build && npm run -w @mini/cli build",
+    "build": "npm run clean && npm run build:core && npm run build:router && npm run build:vite-plugin && npm run build:cli",
     "build:core": "npm run -w @mini/core build",
     "build:router": "npm run -w @mini/router build",
     "build:vite-plugin": "npm run -w @mini/vite-plugin build",
