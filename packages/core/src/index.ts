@@ -70,4 +70,4 @@ export type {
 // JSX
 export { jsx, jsxs, jsxDEV, Fragment } from "./jsx";
 
-export { ElementType, RenderState, ChildType } from "./types";
+export type * from "./types";

@@ -31,16 +31,15 @@ export function setupComponentProviders(
     } else if ("useFactory" in provider && provider.useFactory) {
       instance = provider.useFactory();
     } else if ("useClass" in provider && provider.useClass) {
-      const ServiceClass = provider.useClass;
-      instance = new ServiceClass();
+      try {
+        // reuse instance
+        instance = resolveExisting(component, provider.useClass);
+      } catch (e) {
+        const ServiceClass = provider.useClass;
+        instance = new ServiceClass();
 
-      // Link service to component for DI context
-      instance[SERVICE_COMPONENT] = component;
-
-      // If service has dependencies via @Inject, resolve them
-      const injector = (Application as any).componentInjectors.get(component);
-      if (injector) {
-        resolveDependencies(instance, injector);
+        // Link service to component for DI context
+        instance[SERVICE_COMPONENT] = component;
       }
     } else if ("useExisting" in provider) {
       // Resolve from parent or current

@@ -7,6 +7,7 @@ import {
 } from "@mini/core";
 import { Route } from "@mini/router";
 import { interval, map, take, tap } from "rxjs";
+import { Button } from "./components/Button";
 import { CounterJSX } from "./components/CounterJSX";
 import { DIExample } from "./components/DIExample";
 import { LoadingContent } from "./components/LoadingContent";
@@ -23,6 +24,7 @@ export class App extends Component {
   private counter = signal(0);
   private list = signal([1, 2, 3]);
   private teste = signal<number[]>([]);
+  private unsigned = signal<string>();
 
   get formatName() {
     return this.name.pipe(
@@ -61,25 +63,30 @@ export class App extends Component {
 
   render() {
     return (
-      <div class="min-h-screen p-8">
-        <div class="max-w-7xl mx-auto">
+      <div className="min-h-screen p-8">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <header class="text-center mb-12">
-            <h1 class="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
+          <header className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
               Mini Framework Playground
             </h1>
-            <p class="text-slate-600 text-lg">
+            <p className="text-slate-600 text-lg">
               A modern reactive framework with JSX support
             </p>
           </header>
 
+          <h2>{this.unsigned}</h2>
+          <Button onClick={() => this.unsigned.set("Valor aplicado")}>
+            Add value
+          </Button>
+
           {/* Modal Section */}
-          <div class="mb-8">
+          <div className="mb-8">
             <Modal>
-              <p class="text-slate-700 mb-3">
+              <p className="text-slate-700 mb-3">
                 This is the main content of the modal!
               </p>
-              <p class="text-slate-600">It goes into the default slot.</p>
+              <p className="text-slate-600">It goes into the default slot.</p>
               <LoadingContent />
               <Footer slot="footer" />
               <Header slot="header" />
@@ -87,35 +94,35 @@ export class App extends Component {
           </div>
 
           {/* Main Content Grid */}
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Interactive Demo */}
-            <div class="space-y-6">
-              <div class="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-                <h2 class="text-2xl font-semibold text-slate-800 mb-4">
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-4">
                   Interactive Demo
                 </h2>
 
-                <div class="space-y-4">
+                <div className="space-y-4">
                   <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       Your Name:
                     </label>
                     <input
-                      class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                       value={this.name}
-                      onInput={(e: any) => this.name.next(e.target.value)}
+                      onInput={(e: any) => this.name.set(e.target.value)}
                       placeholder="Enter your name..."
                     />
                   </div>
 
-                  <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <p class="text-slate-700">
-                      <span class="font-medium">Formatted:</span>{" "}
-                      <span class="text-blue-600">{this.formatName}</span>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700">
+                      <span className="font-medium">Formatted:</span>{" "}
+                      <span className="text-blue-600">{this.formatName}</span>
                     </p>
-                    <p class="text-slate-700">
-                      <span class="font-medium">Raw:</span>{" "}
-                      <span class="text-purple-600">{this.name}</span>
+                    <p className="text-slate-700">
+                      <span className="font-medium">Raw:</span>{" "}
+                      <span className="text-purple-600">{this.name}</span>
                     </p>
                   </div>
                 </div>
@@ -131,60 +138,57 @@ export class App extends Component {
             </div>
 
             {/* Right Column - State Monitor */}
-            <div class="space-y-6">
-              <div class="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-                <h2 class="text-2xl font-semibold text-slate-800 mb-4">
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-4">
                   State Monitor
                 </h2>
 
-                <div class="space-y-3">
-                  <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <p class="text-sm font-medium text-blue-700 mb-1">
+                <div className="space-y-3">
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-sm font-medium text-blue-700 mb-1">
                       Auto Counter
                     </p>
-                    <p class="text-3xl font-bold text-blue-600">
+                    <p className="text-3xl font-bold text-blue-600">
                       {this.counter}
                     </p>
                   </div>
 
-                  <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                    <p class="text-sm font-medium text-purple-700 mb-1">
+                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <p className="text-sm font-medium text-purple-700 mb-1">
                       Static List
                     </p>
-                    <p class="text-lg font-mono text-purple-600">
+                    <p className="text-lg font-mono text-purple-600">
                       [{this.list}]
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div class="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-                <h2 class="text-2xl font-semibold text-slate-800 mb-4">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-4">
                   List Items
                 </h2>
-                <div class="space-y-2 mb-4">
+                <div className="space-y-2 mb-4">
                   {this.list.map((item) => (
-                    <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
                       Item: {item}
                     </div>
                   ))}
                 </div>
-                <button
-                  class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-md hover:shadow-lg"
-                  onClick={() => this.addItem()}
-                >
+                <Button className="w-full" onClick={() => this.addItem()}>
                   + Add Item
-                </button>
+                </Button>
               </div>
             </div>
           </div>
 
           {/* Dependency Injection Example */}
-          <div class="mt-12">
+          <div className="mt-12">
             <DIExample />
           </div>
 
-          <div class="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+          <div className="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
             <Todo />
           </div>
         </div>

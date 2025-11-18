@@ -1,7 +1,6 @@
-import { Application } from "../Application";
-import { Component } from "../base/Component";
 import { PARENT_COMPONENT } from "../constants";
 import { getChildSlots } from "../resources/Child";
+import type { MiniElement } from "../types";
 import { applyProps } from "./dom";
 import { processSlottedChildren } from "./slots";
 
@@ -99,9 +98,9 @@ export function createElement(type: any, props: any, parent: any): Node {
 
 declare global {
   namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
+    type IntrinsicElements = {
+      [K in keyof HTMLElementTagNameMap]: MiniElement<HTMLElementTagNameMap[K]>;
+    };
     interface Element extends Node {}
     interface ElementChildrenAttribute {
       children: {};

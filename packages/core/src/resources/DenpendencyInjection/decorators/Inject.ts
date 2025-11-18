@@ -3,8 +3,8 @@
  * Creates a lazy getter that resolves dependencies via Application's DI registry
  */
 import { Application } from "../../../Application";
-import { Injector } from "../Injector";
 import { SERVICE_COMPONENT } from "../../../constants";
+import { Injector } from "../Injector";
 
 /**
  * Property decorator to inject a dependency

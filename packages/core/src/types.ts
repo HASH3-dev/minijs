@@ -2,6 +2,7 @@
  * Metadata key for storing child slot information
  */
 
+import { Signal } from "./resources/Signal";
 import { Component } from "./base/Component";
 
 /**
@@ -26,3 +27,71 @@ export type ChildType =
   | Component;
 
 export type ElementType = ChildType;
+
+export type OmitByPrefix<T, Prefix extends string> = {
+  [K in keyof T as K extends `${Prefix}${infer Rest}` ? never : K]: T[K];
+};
+
+export type ReplaceEventHandlers<T, Prefix extends string> = {
+  [K in keyof T as K extends `${Prefix}${infer Rest}`
+    ? `${Prefix}${Capitalize<Rest>}`
+    : never]: T[K];
+};
+
+export type IfEquals<X, Y, A, B> = (<T>() => T extends X ? 1 : 2) extends <
+  T
+>() => T extends Y ? 1 : 2
+  ? A
+  : B;
+
+export type WritableKeys<T> = {
+  [P in keyof T]: IfEquals<
+    { [Q in P]: T[P] },
+    { -readonly [Q in P]: T[P] },
+    P,
+    never
+  >;
+}[keyof T];
+
+export type ReadonlyKeys<T> = Exclude<keyof T, WritableKeys<T>>;
+
+export type ExcludeFunctions<T> = {
+  [K in keyof T as K extends string
+    ? T[K] extends (...args: any[]) => any
+      ? never
+      : K
+    : K]: T[K];
+};
+
+export type OnlyFunctions<T> = Exclude<keyof T, keyof ExcludeFunctions<T>>;
+
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;
+
+export type SignalProperties<T> = {
+  [P in keyof T]: T[P] | Signal<NonNullable<T[P]>>;
+};
+
+export type MiniElement<T extends HTMLElement> = SignalProperties<
+  DeepPartial<
+    Omit<
+      OmitByPrefix<T, "on">,
+      | "children"
+      | "slot"
+      | "class"
+      | "style"
+      | ReadonlyKeys<T>
+      | OnlyFunctions<T>
+    >
+  > & {
+    children?: any;
+    slot?: string;
+  } & Partial<ReplaceEventHandlers<T, "on">>
+> & {
+  style?:
+    | Signal<Partial<CSSStyleDeclaration>>
+    | SignalProperties<Partial<CSSStyleDeclaration>>;
+};

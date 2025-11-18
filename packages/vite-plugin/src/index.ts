@@ -1,4 +1,5 @@
 import type { Plugin, UserConfig } from "vite";
+import inject from "@rollup/plugin-inject";
 
 /**
  * Vite plugin for Mini Framework
@@ -31,6 +32,28 @@ export default function miniPlugin(): Plugin {
           jsxFactory,
           jsxFragment,
           jsxInject,
+          minifyWhitespace: true,
+          minifyIdentifiers: true,
+          minifySyntax: true,
+          keepNames: true,
+        },
+        build: {
+          minify: "esbuild",
+          cssMinify: true,
+          rollupOptions: {
+            treeshake: true,
+            jsx: {
+              mode: "classic",
+              factory: jsxFactory,
+              fragment: jsxFragment,
+              importSource: jsxImportSource,
+            },
+            plugins: [
+              inject({
+                Fragment: ["@mini/core", "Fragment"],
+              }),
+            ],
+          },
         },
       };
     },
