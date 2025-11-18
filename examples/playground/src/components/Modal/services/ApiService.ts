@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@mini/core/jsx-runtime";
+import { Inject, Injectable } from "@mini/core";
 import { MODAL } from "../constants";
 
 @Injectable()

@@ -9,6 +9,7 @@ import {
   Mount,
   Provider,
   Resolver,
+  Signal,
   signal,
   unwrap,
   UseResolvers,
@@ -44,7 +45,7 @@ class UserResolver implements Resolver<User | null> {
 export class DIExample extends Component {
   private theme = signal<"dark" | "light">("light");
 
-  @Inject(UserResolver) user!: BehaviorSubject<User | null>;
+  @Inject(UserResolver) user!: Signal<User | null>;
 
   constructor() {
     super();
@@ -77,37 +78,35 @@ export class DIExample extends Component {
 
   render() {
     return (
-      <div class="space-y-6">
+      <div className="space-y-6">
         <p>{unwrap(this.user)?.name}</p>
-        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
-          <h2 class="text-3xl font-bold mb-2">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
+          <h2 className="text-3xl font-bold mb-2">
             💉 Reactive Dependency Injection
           </h2>
-          <p class="text-blue-100 mb-4">
+          <p className="text-blue-100 mb-4">
             Switch themes to see DI in action with different implementations
           </p>
           <button
             onClick={() => this.toggleTheme()}
-            class="bg-white text-purple-600 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition shadow-md"
+            className="bg-white text-purple-600 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition shadow-md"
           >
             Toggle Theme
           </button>
         </div>
 
         {/* Reactive Provider that changes based on signal */}
-        {this.theme.pipe(
-          map(() => (
-            <Provider values={this.providersFactory()}>
-              <ThemedCard />
-            </Provider>
-          ))
-        )}
+        {this.theme.map(() => (
+          <Provider values={this.providersFactory()}>
+            <ThemedCard />
+          </Provider>
+        ))}
 
-        <div class="bg-slate-100 rounded-xl p-6 border border-slate-300">
-          <h3 class="text-lg font-bold text-slate-800 mb-3">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-300">
+          <h3 className="text-lg font-bold text-slate-800 mb-3">
             🎯 What's Happening:
           </h3>
-          <ol class="space-y-2 text-sm text-slate-700 list-decimal list-inside">
+          <ol className="space-y-2 text-sm text-slate-700 list-decimal list-inside">
             <li>
               <strong>Signal</strong> holds the current theme ("dark" or
               "light")
@@ -129,27 +128,27 @@ export class DIExample extends Component {
           </ol>
         </div>
 
-        <div class="bg-green-50 border border-green-200 rounded-xl p-6">
-          <h3 class="text-lg font-bold text-green-800 mb-3">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-green-800 mb-3">
             ✨ Key Concepts:
           </h3>
-          <ul class="space-y-2 text-sm text-green-900">
-            <li class="flex items-start">
-              <span class="text-green-600 mr-2 font-bold">→</span>
+          <ul className="space-y-2 text-sm text-green-900">
+            <li className="flex items-start">
+              <span className="text-green-600 mr-2 font-bold">→</span>
               <span>
                 <strong>Liskov Substitution:</strong> Abstract ThemeService can
                 be replaced with DarkTheme or LightTheme
               </span>
             </li>
-            <li class="flex items-start">
-              <span class="text-green-600 mr-2 font-bold">→</span>
+            <li className="flex items-start">
+              <span className="text-green-600 mr-2 font-bold">→</span>
               <span>
                 <strong>Reactive DI:</strong> Provider changes dynamically based
                 on signal value
               </span>
             </li>
-            <li class="flex items-start">
-              <span class="text-green-600 mr-2 font-bold">→</span>
+            <li className="flex items-start">
+              <span className="text-green-600 mr-2 font-bold">→</span>
               <span>
                 <strong>Decoupling:</strong> ThemedCard doesn't know which theme
                 it's using

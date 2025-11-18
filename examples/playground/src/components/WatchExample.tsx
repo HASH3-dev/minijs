@@ -76,46 +76,48 @@ export class WatchExample extends Component {
 
   render() {
     return (
-      <div class="p-6 bg-white rounded-lg shadow-md space-y-4">
-        <h2 class="text-2xl font-bold text-gray-800">@Watch Decorator Demo</h2>
+      <div className="p-6 bg-white rounded-lg shadow-md space-y-4">
+        <h2 className="text-2xl font-bold text-gray-800">
+          @Watch Decorator Demo
+        </h2>
 
-        <div class="space-y-2">
-          <p class="text-gray-600">
+        <div className="space-y-2">
+          <p className="text-gray-600">
             The @Watch decorator automatically subscribes to observables and
             handles cleanup on unmount.
           </p>
         </div>
 
-        <div class="border-t pt-4 space-y-4">
-          <div class="bg-blue-50 p-4 rounded">
-            <h3 class="font-semibold text-blue-900 mb-2">Counter Watch</h3>
-            <p class="text-blue-700 mb-2">
-              Current: <span class="font-mono">{this.counter}</span>
+        <div className="border-t pt-4 space-y-4">
+          <div className="bg-blue-50 p-4 rounded">
+            <h3 className="font-semibold text-blue-900 mb-2">Counter Watch</h3>
+            <p className="text-blue-700 mb-2">
+              Current: <span className="font-mono">{this.counter}</span>
             </p>
             <button
               onClick={this.incrementCounter}
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
             >
               Increment Counter
             </button>
           </div>
 
-          <div class="bg-green-50 p-4 rounded">
-            <h3 class="font-semibold text-green-900 mb-2">Message Watch</h3>
-            <p class="text-green-700 mb-2">
-              Current: <span class="font-mono">{this.message}</span>
+          <div className="bg-green-50 p-4 rounded">
+            <h3 className="font-semibold text-green-900 mb-2">Message Watch</h3>
+            <p className="text-green-700 mb-2">
+              Current: <span className="font-mono">{this.message}</span>
             </p>
             <button
               onClick={this.updateMessage}
-              class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
             >
               Change Message
             </button>
           </div>
         </div>
 
-        <div class="border-t pt-4">
-          <p class="text-sm text-gray-500">
+        <div className="border-t pt-4">
+          <p className="text-sm text-gray-500">
             💡 Check the browser console to see the @Watch decorator in action!
           </p>
         </div>

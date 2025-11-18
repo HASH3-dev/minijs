@@ -235,7 +235,7 @@ export class Modal extends Component {
 
   render() {
     return (
-      <div class="modal">
+      <div className="modal">
         <header>{this.header}</header>
         <main>{this.content}</main>
         <footer>{this.footer}</footer>
@@ -377,7 +377,7 @@ export class SalesDashboard extends Component {
   // Renderizado UMA VEZ quando componente monta
   render() {
     return (
-      <div class="dashboard">
+      <div className="dashboard">
         <Header user={this.user} />
 
         {/* Filtros - mudanças sincronizam com URL */}
@@ -391,7 +391,7 @@ export class SalesDashboard extends Component {
         />
 
         {/* Cards com loading states - <Loader> mostra skeleton automaticamente */}
-        <div class="metrics">
+        <div className="metrics">
           <MetricCard
             title="Total Sales"
             value={this.salesData.pipe(map(d => d.total))}
@@ -955,13 +955,13 @@ export class Card extends Component {
 
   render() {
     return (
-      <div class="card">
+      <div className="card">
         {this.cardHeader && (
-          <div class="card-header">{this.cardHeader}</div>
+          <div className="card-header">{this.cardHeader}</div>
         )}
-        <div class="card-body">{this.cardBody}</div>
+        <div className="card-body">{this.cardBody}</div>
         {this.cardFooter && (
-          <div class="card-footer">{this.cardFooter}</div>
+          <div className="card-footer">{this.cardFooter}</div>
         )}
       </div>
     );
@@ -972,7 +972,7 @@ export class Card extends Component {
 <Card>
   <div slot="header">
     <h2>Card Title</h2>
-    <span class="badge">New</span>
+    <span className="badge">New</span>
   </div>
 
   <p>This is the main content that goes in the default slot.</p>
