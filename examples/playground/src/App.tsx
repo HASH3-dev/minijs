@@ -16,6 +16,7 @@ import { Footer } from "./components/Modal/Footer";
 import { Header } from "./components/Modal/Header";
 import { Todo } from "./components/Todo";
 import { AlertService } from "./services/alert/AlertService";
+import { HttpServiceExample } from "./components/HttpServiceExample";
 
 @Route("/")
 @UseProviders([AlertService, { provide: Symbol.for("name"), useValue: "mini" }])
@@ -190,6 +191,10 @@ export class App extends Component {
 
           <div className="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
             <Todo />
+          </div>
+
+          <div className="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+            <HttpServiceExample />
           </div>
         </div>
       </div>
