@@ -49,7 +49,7 @@ export class WatchExample extends Component {
     this.lastMessageValue = value;
   }
 
-  @Watch("counter", [debounceTime(1000)])
+  @Watch("counter", { pipes: [debounceTime(1000)] })
   @Watch("message")
   combinedWatch(message: string, counter: number) {
     console.log(
