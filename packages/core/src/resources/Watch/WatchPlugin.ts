@@ -65,7 +65,11 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
         continue;
       }
 
-      const pipedObservable = (observable.get(paths.join(".")).pipe as any)(
+      const pipedObservable = (
+        paths?.length > 0
+          ? observable.get(paths.join(".") as never)
+          : (observable as any)
+      ).pipe(
         ...(config.skipInitialValue
           ? [skip(observable.isInitialized() ? 1 : 0)]
           : []),
