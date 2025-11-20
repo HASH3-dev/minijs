@@ -4,7 +4,7 @@
 echo "🔓 Unlinking Mini Framework packages..."
 
 # Array of packages
-PACKAGES=("core" "router" "vite-plugin" "cli")
+PACKAGES=("core" "router" "http-service" "vite-plugin" "cli")
 
 echo ""
 # Unlink each package

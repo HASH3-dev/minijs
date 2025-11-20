@@ -1,0 +1,41 @@
+{
+  "name": "@mini/http-service",
+  "version": "0.1.0",
+  "description": "HTTP Service for Mini Framework with Signal support and request cancellation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format esm --sourcemap",
+    "dev": "tsup src/index.ts --dts --format esm --sourcemap --watch"
+  },
+  "keywords": [
+    "http",
+    "service",
+    "mini-framework",
+    "signal",
+    "rxjs",
+    "fetch",
+    "axios"
+  ],
+  "peerDependencies": {
+    "@mini/core": "^0.1.0",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@mini/core": "*",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "rxjs": "^7.8.2"
+  }
+}
