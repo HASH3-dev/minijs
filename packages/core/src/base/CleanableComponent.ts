@@ -120,7 +120,6 @@ export abstract class CleanableComponent extends RenderableComponent {
     let next = start.nextSibling!;
     const nodes: ChildNode[] = [];
     while (next && next !== end) {
-      console.log(next);
       nodes.push(next);
       next = next.nextSibling!;
     }
