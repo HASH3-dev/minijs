@@ -10,7 +10,7 @@ import { DeepUnwrapObservable } from "../types";
  */
 export const unwrap = <T>(val: T): DeepUnwrapObservable<T> => {
   if (val instanceof Signal) {
-    return unwrap(val.value);
+    return unwrap(val.value) as any as DeepUnwrapObservable<T>;
   }
 
   if (Array.isArray(val)) {

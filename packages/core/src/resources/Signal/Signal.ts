@@ -1,6 +1,12 @@
 import { distinct, map, Observable, ReplaySubject, skip, take } from "rxjs";
 import { iterable } from "../../utils/iterable";
-import type { DeepPath, UnwrapIterable, UnwrapObservable } from "./types";
+import type {
+  DeepPathType,
+  DeepPropertyType,
+  UnwrapIterable,
+  UnwrapObservable,
+} from "./types";
+import { DeepRequired } from "../../types";
 
 /**
  * A signal is a type of observable that emits a value and keeps state.
@@ -82,9 +88,13 @@ export class Signal<
    * const newSignal = signal.get("a.b.c");
    * newSignal.subscribe((value) => console.log(value)); // output: 1
    */
-  get<T extends string>(internalProp: string): Signal<DeepPath<R, T>> {
-    const path = internalProp.split(".");
-    const s = new Signal<DeepPath<R, T>>();
+  get<K extends keyof DeepPathType<DeepRequired<R>>>(
+    internalProp: K
+  ): Signal<DeepPropertyType<DeepRequired<R>, K extends string ? K : string>> {
+    const path = (internalProp as string).split(".");
+    const s = new Signal<
+      DeepPropertyType<DeepRequired<R>, K extends string ? K : string>
+    >();
 
     this.pipe(
       map((val) => path.reduce((acc, key) => ((acc as any) ?? {})?.[key], val)),
@@ -243,9 +253,6 @@ export class Signal<
   /**
    * Takes a function that returns a new observable and emits the value of that observable when the original signal emits a value.
    * The function is called with the value of the original signal as an argument.
-   * The returned signal only emits the value of the new observable, and not the original value of the original signal.
-   * If the signal is initialized, skip the current value and wait for the next one.
-   * If the signal is not initialized, wait for the first value.
    * @template T The type of the value emitted by the new signal.
    * @param fn The function to call with the value of the original signal as an argument.
    * @returns A new signal that emits the value of the new observable.
@@ -263,7 +270,7 @@ export class Signal<
   then<T>(fn: (value: R) => T): Signal<T> {
     const s = new Signal<T>();
 
-    this.pipe(skip(this.isInitialized() ? 1 : 0), take(1)).subscribe({
+    this.pipe(take(1)).subscribe({
       next: (val) => s.next(fn(val) as UnwrapObservable<T>),
       error: (err) => s.error(err),
       complete: () => s.complete(),
