@@ -62,6 +62,9 @@ export class GuardDecoratorPlugin extends DecoratorPlugin {
       return originalRender();
     }
 
+    const bloquedPhases = [LifecyclePhase.Mounted, LifecyclePhase.AfterMount];
+    component.blockLifecyclePhases = bloquedPhases;
+
     // Instantiate guards
     const guardInstances = guards.map((guard: GuardType) =>
       this.instantiateGuard(guard as any, injector, component)
@@ -103,6 +106,7 @@ export class GuardDecoratorPlugin extends DecoratorPlugin {
           return blockedGuard.guard.fallback?.() ?? null;
         } else {
           // All guards passed - render component normally
+          component.unblockLifecyclePhases(bloquedPhases);
           return originalRender();
         }
       }),

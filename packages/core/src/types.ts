@@ -72,6 +72,12 @@ export type DeepPartial<T> = T extends object
     }
   : T;
 
+export type DeepRequired<T> = T extends object
+  ? {
+      [P in keyof T]-?: DeepRequired<T[P]>;
+    }
+  : T;
+
 export type SignalProperties<T> = {
   [P in keyof T]:
     | T[P]

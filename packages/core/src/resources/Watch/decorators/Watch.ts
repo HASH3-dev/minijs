@@ -26,7 +26,18 @@ import type { WatchConfig } from "../types";
  */
 export function Watch(
   propertyName: string,
-  pipes?: OperatorFunction<any, any>[]
+  configs?: {
+    /** Optional array of pipes to apply to the observable
+     *
+     * @default []
+     */
+    pipes?: OperatorFunction<any, any>[];
+    /** Optional flag to skip emitting the initial value
+     *
+     * @default true
+     */
+    skipInitialValue?: boolean;
+  }
 ) {
   return function (
     target: any,
@@ -43,7 +54,8 @@ export function Watch(
     const config: WatchConfig = {
       propertyName,
       method: originalMethod,
-      pipes,
+      pipes: configs?.pipes,
+      skipInitialValue: configs?.skipInitialValue ?? true,
     };
 
     target[WATCH_PROPERTIES].push(config);

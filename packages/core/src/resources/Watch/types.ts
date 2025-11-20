@@ -10,4 +10,6 @@ export interface WatchConfig {
   method: Function;
   /** Array of RxJS pipes to apply to the observable */
   pipes?: OperatorFunction<any, any>[];
+  /** Skip the first value emitted by the observable */
+  skipInitialValue?: boolean;
 }

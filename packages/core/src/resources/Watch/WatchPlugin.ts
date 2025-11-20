@@ -1,9 +1,10 @@
-import { DecoratorPlugin } from "../../lifecycle/DecoratorPlugin";
+import { combineLatest, Observable, skip, takeUntil } from "rxjs";
 import { Component } from "../../base/Component";
+import { LifecyclePhase } from "../../base/ReactiveComponent";
+import { DecoratorPlugin } from "../../lifecycle/DecoratorPlugin";
+import { Signal } from "../Signal";
 import { WATCH_PROPERTIES } from "./constants";
 import type { WatchConfig } from "./types";
-import { LifecyclePhase } from "../../base/ReactiveComponent";
-import { combineLatest, Observable, takeUntil } from "rxjs";
 
 /**
  * Plugin that sets up @Watch decorated property subscriptions
@@ -46,7 +47,9 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
 
     // Setup each watcher
     for (const config of configs) {
-      const observable = (component as any)[config.propertyName];
+      const [signalProp, ...paths] = config.propertyName.split(".");
+
+      const observable = (component as any)[signalProp] as Signal;
 
       if (!observable) {
         console.warn(
@@ -62,7 +65,16 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
         continue;
       }
 
-      const pipedObservable = observable.pipe(...(config.pipes ?? []));
+      const pipedObservable = (
+        paths?.length > 0
+          ? observable.get(paths.join(".") as never)
+          : (observable as any)
+      ).pipe(
+        ...(config.skipInitialValue
+          ? [skip(observable.isInitialized() ? 1 : 0)]
+          : []),
+        ...((config.pipes ?? []) as any[])
+      );
 
       if (methodsSubscriptions.has(config.method.name)) {
         methodsSubscriptions.get(config.method.name)?.push(pipedObservable);

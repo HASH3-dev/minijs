@@ -6,18 +6,21 @@ import {
   Signal,
   UseResolvers,
 } from "@mini/core";
-import { from, map, Observable } from "rxjs";
+import { from, Observable } from "rxjs";
 import { ThemeService } from "../services/theme/ThemeService.Abstract";
 
 interface User {
   id: number;
   name: string;
+  address?: {
+    street: string;
+  };
 }
 
 @Injectable()
-class UserResolver implements Resolver<User | null> {
-  resolve(): Observable<User | null> {
-    return from<Promise<User | null>>(
+class UserResolver implements Resolver<User> {
+  resolve(): Observable<User> {
+    return from<Promise<User>>(
       new Promise((resolve, reject) => {
         setTimeout(() => {
           // resolve(null);
@@ -33,7 +36,7 @@ class UserResolver implements Resolver<User | null> {
 export class ThemedCard extends Component {
   @Inject(ThemeService) theme!: ThemeService;
 
-  @Inject(UserResolver) user!: Signal<User | null>;
+  @Inject(UserResolver) user!: Signal<User>;
 
   renderLoading() {
     return <div>Loading...</div>;
@@ -58,7 +61,7 @@ export class ThemedCard extends Component {
         <p className={`mb-4 ${textClass}`}>
           This card uses the injected ThemeService to determine its styling.
         </p>
-        <p>Hello {this.user.pipe(map((user) => user?.name))}</p>
+        <p>Hello {this.user.get("name").orElse("World")}</p>
         <div className="space-y-2">
           <div className={`p-3 rounded-lg border ${buttonClass}`}>
             <p className="text-sm font-medium">

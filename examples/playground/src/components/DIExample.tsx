@@ -14,7 +14,6 @@ import {
   unwrap,
   UseResolvers,
 } from "@mini/core";
-import { BehaviorSubject, map } from "rxjs";
 import { ThemeService } from "../services/theme/ThemeService.Abstract";
 import { DarkTheme } from "../services/theme/ThemeService.DarkTheme";
 import { LightTheme } from "../services/theme/ThemeService.LightTheme";
@@ -45,7 +44,7 @@ class UserResolver implements Resolver<User | null> {
 export class DIExample extends Component {
   private theme = signal<"dark" | "light">("light");
 
-  @Inject(UserResolver) user!: Signal<User | null>;
+  @Inject(UserResolver) user!: Signal<User>;
 
   constructor() {
     super();
@@ -57,10 +56,14 @@ export class DIExample extends Component {
     console.log("[DIExample] onMount() called", unwrap(this.user));
   }
 
-  toggleTheme() {
-    const current = unwrap(this.theme);
-    this.theme.next(current === "dark" ? "light" : "dark");
-    console.log(`Theme switched to: ${this.theme.value}`);
+  async toggleTheme() {
+    const current = await this.theme;
+    this.theme.set(current === "dark" ? "light" : "dark");
+    console.log(
+      `Theme switched to: ${this.theme.value} for user ${await this.user.get(
+        "name"
+      )}`
+    );
   }
 
   providersFactory() {
@@ -79,7 +82,7 @@ export class DIExample extends Component {
   render() {
     return (
       <div className="space-y-6">
-        <p>{unwrap(this.user)?.name}</p>
+        <p>{this.user.get("name")}</p>
         <div className="bg-linear-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
           <h2 className="text-3xl font-bold mb-2">
             💉 Reactive Dependency Injection

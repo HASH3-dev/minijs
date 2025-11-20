@@ -1,6 +1,6 @@
 import { Component } from "../base/Component";
 import { LifecyclePhase } from "../base/ReactiveComponent";
-import { concatMap, from, takeUntil } from "rxjs";
+import { concatMap, filter, from, takeUntil } from "rxjs";
 
 /**
  * Interface that all lifecycle hooks must implement
@@ -74,6 +74,7 @@ export class LifecycleManager {
       .pipe(
         // takeUntil prevents memory leaks by completing when component unmounts
         takeUntil(component.$.unmount$),
+        filter((e) => !component.blockedLifecyclePhases.has(e)),
         // concatMap ensures each phase completes before next starts
         concatMap((phase) =>
           // Convert async execution to Observable

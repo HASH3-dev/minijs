@@ -1,10 +1,5 @@
 import { Signal } from "../Signal";
-
-type DeepUnwrapObservable<T> = T extends Signal<infer U>
-  ? DeepUnwrapObservable<U>
-  : T extends object
-  ? { [K in keyof T]: DeepUnwrapObservable<T[K]> }
-  : T;
+import { DeepUnwrapObservable } from "../types";
 
 /**
  * Get the current value of a Signal as a plain value or extract deeply nested signals values
@@ -15,7 +10,7 @@ type DeepUnwrapObservable<T> = T extends Signal<infer U>
  */
 export const unwrap = <T>(val: T): DeepUnwrapObservable<T> => {
   if (val instanceof Signal) {
-    return unwrap(val.value);
+    return unwrap(val.value) as any as DeepUnwrapObservable<T>;
   }
 
   if (Array.isArray(val)) {

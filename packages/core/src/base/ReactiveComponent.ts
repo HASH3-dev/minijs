@@ -27,6 +27,7 @@ export enum LifecyclePhase {
 export abstract class ReactiveComponent {
   private _lifecycle$ = signal<LifecyclePhase>();
   private _error$ = new Subject<Error>();
+  private _blockedLifecyclePhases = new Set<LifecyclePhase>();
 
   /**
    * Observable of lifecycle phases
@@ -65,5 +66,21 @@ export abstract class ReactiveComponent {
    */
   protected _emitError(error: Error): void {
     this._error$.next(error);
+  }
+
+  set blockLifecyclePhases(phases: LifecyclePhase[]) {
+    phases.forEach((phase) => this._blockedLifecyclePhases.add(phase));
+  }
+
+  get blockedLifecyclePhases() {
+    return this._blockedLifecyclePhases;
+  }
+
+  unblockLifecyclePhases(phase: LifecyclePhase[]) {
+    phase.forEach((phase) => this._blockedLifecyclePhases.delete(phase));
+  }
+
+  unblockAllLifecyclePhases() {
+    this._blockedLifecyclePhases.clear();
   }
 }

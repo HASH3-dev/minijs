@@ -43,7 +43,6 @@ export class Router {
   }
 
   set params(params: Record<string, string>) {
-    console.log("[Router] params changed", params);
     if (JSON.stringify(this._params) === JSON.stringify(params)) {
       return;
     }
