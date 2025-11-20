@@ -80,7 +80,7 @@ export class DIExample extends Component {
     return (
       <div className="space-y-6">
         <p>{unwrap(this.user)?.name}</p>
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
+        <div className="bg-linear-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
           <h2 className="text-3xl font-bold mb-2">
             💉 Reactive Dependency Injection
           </h2>

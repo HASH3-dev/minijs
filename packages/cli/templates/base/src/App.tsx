@@ -13,16 +13,16 @@ export class App extends Component {
 
   render() {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-          <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold text-center bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
             Mini Framework
           </h1>
           <p className="text-center text-gray-600 mb-8">
             A modern reactive framework
           </p>
 
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl p-8 mb-6">
+          <div className="bg-linear-to-r from-blue-500 to-indigo-500 rounded-xl p-8 mb-6">
             <p className="text-white text-center text-lg mb-2">Counter</p>
             <p className="text-white text-center text-6xl font-bold">
               {this.count}

@@ -100,17 +100,24 @@ declare global {
   namespace JSX {
     type IntrinsicElements = {
       [K in keyof HTMLElementTagNameMap]: MiniElement<HTMLElementTagNameMap[K]>;
+    } & {
+      [J in keyof SVGElementTagNameMap]: MiniElement<SVGElementTagNameMap[J]>;
     };
+
     interface Element extends Node {}
+
     interface ElementChildrenAttribute {
       children: {};
     }
+
     interface ElementClass {
       render(): any;
     }
+
     interface ElementAttributesProperty {
       props: {};
     }
+
     interface IntrinsicAttributes {
       children?: any;
     }

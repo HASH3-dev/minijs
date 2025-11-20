@@ -23,7 +23,7 @@ export class Modal extends Component {
     return (
       <>
         <div className="bg-white rounded-2xl shadow-xl border-2 border-slate-300 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+          <div className="bg-linear-to-r from-blue-600 to-purple-600 px-6 py-4">
             {this.header}
           </div>
           <div className="px-6 py-5 bg-slate-50">{this.content}</div>

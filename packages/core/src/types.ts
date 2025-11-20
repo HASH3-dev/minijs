@@ -4,6 +4,7 @@
 
 import { Signal } from "./resources/Signal";
 import { Component } from "./base/Component";
+import { Observable } from "rxjs";
 
 /**
  * Enum for component render states
@@ -72,10 +73,13 @@ export type DeepPartial<T> = T extends object
   : T;
 
 export type SignalProperties<T> = {
-  [P in keyof T]: T[P] | Signal<NonNullable<T[P]>>;
+  [P in keyof T]:
+    | T[P]
+    | Signal<NonNullable<T[P]>>
+    | Observable<NonNullable<T[P]>>;
 };
 
-export type MiniElement<T extends HTMLElement> = SignalProperties<
+export type MiniElement<T extends Element> = SignalProperties<
   DeepPartial<
     Omit<
       OmitByPrefix<T, "on">,
@@ -89,9 +93,12 @@ export type MiniElement<T extends HTMLElement> = SignalProperties<
   > & {
     children?: any;
     slot?: string;
-  } & Partial<ReplaceEventHandlers<T, "on">>
+    className?: string;
+  } & Partial<ReplaceEventHandlers<T, "on">> &
+    Record<string, any>
 > & {
   style?:
     | Signal<Partial<CSSStyleDeclaration>>
+    | Observable<Partial<CSSStyleDeclaration>>
     | SignalProperties<Partial<CSSStyleDeclaration>>;
 };

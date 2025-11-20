@@ -42,7 +42,7 @@ export class App extends Component {
     }, 1000);
 
     return interval(5000).pipe(
-      take(0),
+      // take(0),
       // tap(() => console.log("tap")),
       tap(() => {
         this.counter.set((counter) => counter + 1);
@@ -57,6 +57,12 @@ export class App extends Component {
     return () => console.log("App destroyed");
   }
 
+  @Mount()
+  async testPromiseLike() {
+    const data = await this.unsigned;
+    console.log("[SIGNAL AS A PROMISSE]", data);
+  }
+
   addItem() {
     this.list.set((prev) => [...prev, prev.length + 1]);
   }
@@ -67,7 +73,7 @@ export class App extends Component {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <header className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-slate-800 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
+            <h1 className="text-5xl font-bold text-slate-800 mb-4 bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text">
               Mini Framework Playground
             </h1>
             <p className="text-slate-600 text-lg">
@@ -171,7 +177,7 @@ export class App extends Component {
                 </h2>
                 <div className="space-y-2 mb-4">
                   {this.list.map((item) => (
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
+                    <div className="bg-linear-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
                       Item: {item}
                     </div>
                   ))}

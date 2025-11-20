@@ -93,7 +93,7 @@ export class CounterJSX extends Component<{ name: Observable<string> }> {
             Counter (JSX Reactive)
           </h2>
 
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 mb-4 text-center">
+          <div className="bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl p-6 mb-4 text-center">
             <p className="text-white text-sm font-medium mb-2">Current Value</p>
             <p className="text-white text-5xl font-bold">{this.count}</p>
           </div>
