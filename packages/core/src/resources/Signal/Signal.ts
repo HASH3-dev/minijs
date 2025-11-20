@@ -1,83 +1,82 @@
-import { map, Observable, ReplaySubject } from "rxjs";
+import { map, Observable, ReplaySubject, skip, take } from "rxjs";
+import { iterable } from "../../utils/iterable";
+import type { UnwrapIterable, UnwrapObservable } from "./types";
 
-export class Signal<T = undefined> extends ReplaySubject<any> {
-  private _value: T | undefined;
+export class Signal<
+  T = undefined,
+  R = UnwrapObservable<T>
+> extends ReplaySubject<R> {
+  private _value: R | undefined;
+  private _initialized = false;
 
   constructor(value?: T) {
     super(1);
 
     if (value instanceof Observable) {
       value.subscribe(this);
-    }
-
-    if (value !== undefined) {
-      this.next(value);
+      if (value instanceof Signal) {
+        this._initialized = value.isInitialized();
+      }
+    } else if (value !== undefined) {
+      this.next(value as R);
+      this._initialized = true;
     }
   }
 
-  next(value: T): void {
+  isInitialized(): boolean {
+    return this._initialized;
+  }
+
+  next(value: R): void {
     this._value = value;
+    this._initialized = true;
     super.next(value);
   }
 
-  get value(): T {
-    return this.getValue() as T;
+  get value(): R {
+    return this.getValue() as R;
   }
 
-  getValue(): T {
-    return this._value as T;
+  getValue(): R {
+    return this._value as R;
   }
 
-  set(value: T | ((prev: T) => T)) {
+  set(value: R | ((prev: R) => R)) {
     if (typeof value === "function") {
-      this.next((value as (prev: T) => T)(this._value as T));
+      this.next((value as (prev: R) => R)(this._value as R));
     } else {
       this.next(value);
     }
   }
 
-  map<U, J = T extends Array<infer K> ? K : T>(
-    fn: (value: J) => U
-  ): Signal<U | U[]> {
-    const s = new Signal<U | U[]>();
+  map<U, J = UnwrapIterable<R>>(fn: (value: J) => U): Signal<U> {
+    const s = new Signal<U>();
 
-    this.pipe(
-      map((e) => (Array.isArray(e) ? e.map(fn) : fn(e as unknown as J)))
-    ).subscribe(s);
+    this.pipe(map((e) => iterable(e).map(fn as any))).subscribe(s as any);
 
     return s;
   }
 
-  reduce<U, J = T extends Array<infer K> ? K : T>(
+  reduce<U, J = UnwrapIterable<R>>(
     fn: (acc: U, value: J) => U,
     initialValue: U
   ): Signal<U> {
     const s = new Signal<U>();
     this.pipe(
-      map((e) =>
-        Array.isArray(e)
-          ? e.reduce(fn, initialValue)
-          : fn(initialValue, e as unknown as J)
-      )
-    ).subscribe(s);
+      map((e) => iterable(e).reduce(fn as any, initialValue))
+    ).subscribe(s as any);
 
     return s;
   }
 
-  filter<J = T extends Array<infer K> ? K : T>(
-    fn: (value: J) => boolean
-  ): Signal<T> {
-    const s = new Signal<T>();
-    this.pipe(
-      map((e) =>
-        Array.isArray(e) ? e.filter(fn) : fn(e as unknown as J) ? e : undefined
-      )
-    ).subscribe(s);
+  filter<J = UnwrapIterable<R>>(fn: (value: J) => boolean): Signal<R> {
+    const s = new Signal<R>();
+    this.pipe(map((e) => iterable(e).filter(fn as any))).subscribe(s as any);
 
     return s;
   }
 
-  orElse<K>(value: K, checker?: (value: K) => boolean): Signal<T> | Signal<K> {
+  orElse<K>(value: K, checker?: (value: R) => boolean): Signal<R> | Signal<K> {
     const s = new Signal(value);
 
     this.pipe(
@@ -90,8 +89,32 @@ export class Signal<T = undefined> extends ReplaySubject<any> {
           ? value
           : e;
       })
-    ).subscribe(s);
+    ).subscribe(s as any);
 
     return s;
+  }
+
+  then<T>(fn: (value: R) => T): Signal<T> {
+    const s = new Signal<T>();
+
+    this.pipe(skip(this.isInitialized() ? 1 : 0), take(1)).subscribe({
+      next: (val) => s.next(fn(val) as UnwrapObservable<T>),
+    });
+
+    return s;
+  }
+
+  catch<U>(fn: (value: any) => U): Signal<U> {
+    const s = new Signal<U>();
+
+    this.pipe(take(1)).subscribe({
+      error: (err) => s.next(fn(err) as UnwrapObservable<U>),
+    });
+
+    return s;
+  }
+
+  finally(fn: () => any) {
+    this.pipe(take(1)).subscribe({ complete: fn });
   }
 }
