@@ -3,6 +3,7 @@ import { Component } from "../../base/Component";
 import { MOUNT_METHODS } from "./constants";
 import { LifecyclePhase } from "../../base/ReactiveComponent";
 import { isObservable, takeUntil } from "rxjs";
+import { isSubscription } from "rxjs/internal/Subscription";
 
 /**
  * Plugin that executes @Mount decorated methods
@@ -32,6 +33,8 @@ export class MountDecoratorPlugin extends DecoratorPlugin {
 
         if (isObservable(cleanup)) {
           cleanup.pipe(takeUntil(component.$.unmount$)).subscribe();
+        } else if (isSubscription(cleanup)) {
+          this.registerCleanup(component, () => cleanup.unsubscribe());
         } else if (typeof cleanup === "function") {
           this.registerCleanup(component, cleanup);
         }

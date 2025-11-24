@@ -70,7 +70,7 @@ export class DIExample extends Component {
     return [
       {
         provide: ThemeService,
-        useClass: unwrap(this.theme) === "dark" ? DarkTheme : LightTheme,
+        useClass: this.theme.value === "dark" ? DarkTheme : LightTheme,
       },
     ];
   }

@@ -12,16 +12,19 @@ export class Counter extends Component {
 
   @Mount()
   startCounting() {
-    setInterval(() => {
-      this.count.next(this.count.value + 1);
+    const interval = setInterval(() => {
+      this.count.set(prev => prev + 1);
     }, 1000);
+
+    // Cleanup automático
+    return () => clearInterval(interval);
   }
 
   render() {
     return (
       <div>
         <h1>{this.count}</h1>
-        <button onClick={() => this.count.next(this.count.value + 1)}>
+        <button onClick={() => this.count.set(prev => prev + 1)}>
           Increment
         </button>
       </div>
@@ -89,13 +92,13 @@ export class LiveDashboard extends Component {
   @Mount()
   setupWebSocket() {
     const ws = new WebSocket('ws://api.com/stream');
-    ws.onmessage = (e) => this.data.next(JSON.parse(e.data));
+    ws.onmessage = (e) => this.data.set(JSON.parse(e.data));
     return () => ws.close();
   }
 
   // render() roda UMA VEZ. Apenas {this.data} atualiza no DOM.
   render() {
-    return <div>{this.data.pipe(map(d => d.map(item => <Card data={item} />)))}</div>;
+    return <div>{this.data.map(item => <Card data={item} />)}</div>;
   }
 }
 ```
@@ -147,7 +150,7 @@ export class Dashboard extends Component {
 
   // Métodos são estáveis - sem useCallback
   handleFilter(region: string) {
-    this.filters.next({ region });
+    this.filters.set({ region });
   }
 
   // @Watch controla EXATAMENTE quando roda
@@ -160,7 +163,7 @@ export class Dashboard extends Component {
   @Mount()
   setupWebSocket() {
     const ws = new WebSocket('ws://...');
-    ws.onmessage = (e) => this.data.next(e.data);
+    ws.onmessage = (e) => this.data.set(e.data);
     return () => ws.close(); // Cleanup natural
   }
 
@@ -328,7 +331,7 @@ class AuthGuard implements Guard {
 @UseGuards([AuthGuard])
 export class SalesDashboard extends Component {
   @Inject(SalesService) sales!: SalesService;
-  @Inject(UserResolver) user!: BehaviorSubject<User>;
+  @Inject(UserResolver) user!: Signal<User>;
 
   // Filters sincronizados com URL automaticamente
   @PersistentState(new UseURLStorage())
@@ -361,7 +364,7 @@ export class SalesDashboard extends Component {
     return this.sales.streamLiveUpdates() // Ao retornar um Observable no Mount, a execução e o cleanup são feitos automaticamente
       .subscribe(update => {
         // Atualiza APENAS este signal, não todo o componente
-        this.liveSales.next(update.total);
+        this.liveSales.set(update.total);
       });
   }
 
@@ -385,8 +388,8 @@ export class SalesDashboard extends Component {
           dateRange={this.dateRange}
           region={this.selectedRegion}
           onChange={(filters) => {
-            this.dateRange.next(filters.dateRange);
-            this.selectedRegion.next(filters.region);
+            this.dateRange.set(filters.dateRange);
+            this.selectedRegion.set(filters.region);
           }}
         />
 
@@ -394,7 +397,7 @@ export class SalesDashboard extends Component {
         <div className="metrics">
           <MetricCard
             title="Total Sales"
-            value={this.salesData.pipe(map(d => d.total))}
+            value={this.salesData.get('total')}
           >
             <Loader fragment="Sales" />
           </MetricCard>
@@ -455,8 +458,9 @@ export class ReactiveExample extends Component {
     return this.count.pipe(map(n => n * 2));
   }
 
+  // Que também podem ser mapeadas diretamete com o .map da classe Signal
   get isAdult() {
-    return this.user.pipe(map(u => u.age >= 18));
+    return this.user.map(u => u.age >= 18);
   }
 
   // Combine múltiplos observables
@@ -472,19 +476,17 @@ export class ReactiveExample extends Component {
         {/* Signals no template atualizam automaticamente */}
         <p>Count: {this.count}</p>
         <p>Double: {this.doubleCount}</p>
-        <p>User: {this.user.pipe(map(u => u.name))}</p>
+        <p>User: {this.user.get('name')}</p>
 
         {/* Renderização condicional */}
-        {this.isAdult.pipe(map(adult =>
+        {this.isAdult.map(adult =>
           adult ? <span>Adult</span> : <span>Minor</span>
-        ))}
+        )}
 
         {/* Listas reativas */}
-        {this.items.pipe(map(items =>
-          items.map(item => <li>{item.name}</li>)
-        ))}
+        {this.items.map(item => <li>{item.name}</li>)}
 
-        <button onClick={() => this.count.next(this.count.value + 1)}>
+        <button onClick={() => this.count.set(this.count.value + 1)}>
           Increment
         </button>
       </div>
@@ -501,7 +503,7 @@ export class LifecycleExample extends Component {
   @Mount()
   setupWebSocket() {
     const ws = new WebSocket('ws://...');
-    ws.onmessage = (e) => this.data.next(e.data);
+    ws.onmessage = (e) => this.data.set(e.data);
 
     // Cleanup function - roda automaticamente no unmount
     return () => ws.close();
@@ -541,7 +543,7 @@ export class WatchExample extends Component {
     console.log('Counter changed:', value);
 
     if (value > 10) {
-      this.message.next('Too high!');
+      this.message.set('Too high!');
     }
   }
 
@@ -711,17 +713,24 @@ class SettingsResolver implements Resolver<Settings> {
 @Route('/profile')
 @UseResolvers([UserResolver, SettingsResolver])
 export class ProfilePage extends Component {
-  // Injetados como BehaviorSubjects
-  @Inject(UserResolver) user!: BehaviorSubject<User>;
-  @Inject(SettingsResolver) settings!: BehaviorSubject<Settings>;
+  // Injetados como Signals sem valor inicial
+  @Inject(UserResolver) user!: Signal<User>;
+  @Inject(SettingsResolver) settings!: Signal<Settings>;
 
   render() {
     return (
       <div>
-        <h1>Welcome, {this.user.pipe(map(u => u.name))}</h1>
+        <h1>Welcome, {this.user.get('name')}</h1>
         <Settings data={this.settings} />
       </div>
     );
+  }
+
+  // Alternativamente, use await para esperar resolução
+  @Mount()
+  async onUserLoaded() {
+    const user = await this.user; // Aguarda resolver completar
+    console.log('User loaded:', user.name);
   }
 
   // Mostrado enquanto resolve
@@ -755,8 +764,11 @@ export class TodoList extends Component {
   // Quando a URL muda (voltar/avançar), o state atualiza
 
   addTodo(text: string) {
-    const current = unwrap(this.todos);
-    this.todos.next([...current, { id: Date.now(), text, done: false }]);
+    this.todos.set((prev) => [...prev, {
+      id: Date.now(),
+      text,
+      done: false
+    }]);
   }
 
   render() {
@@ -771,13 +783,11 @@ export class TodoList extends Component {
 
         <FilterButtons
           current={this.filter}
-          onChange={(f) => this.filter.next(f)}
+          onChange={(f) => this.filter.set(f)}
         />
 
         <ul>
-          {this.todos.pipe(map(todos =>
-            todos.map(todo => <TodoItem todo={todo} />)
-          ))}
+          {this.todos.map(todo => <TodoItem todo={todo} />)}
         </ul>
       </div>
     );
@@ -839,7 +849,7 @@ export class ProductDetailPage extends Component {
   render() {
     return (
       <div>
-        <h1>Product {this.router.params$.pipe(map(p => p.id))}</h1>
+        <h1>Product {this.router.params$.get('id')}</h1>
         <button onClick={() => this.router.push('/products')}>
           Back
         </button>
@@ -987,6 +997,399 @@ export class Card extends Component {
 
 ---
 
+## 🔥 Features Avançadas
+
+### 🎯 **Signals como Promises**
+
+Signals são awaitable! Use `await` para obter o próximo valor emitido.
+
+```typescript
+// Signal é awaitable!
+const user = signal<User>();
+
+// Aguarda o primeiro valor emitido
+const userData = await user;
+console.log(userData); // User object
+
+// Útil para carregamento assíncrono
+@Mount()
+async loadData() {
+  // Espera resolver completar
+  const user = await this.userResolver;
+  console.log('User loaded:', user.name);
+
+  // Carrega dados baseado no user
+  const data = await this.api.fetchUserData(user.id);
+  this.data.set(data);
+}
+
+// Encadeamento promise-like
+signal(1)
+  .then(value => value * 2)
+  .then(value => console.log(value)) // 2
+  .catch(err => console.error(err))
+  .finally(() => console.log('Done'));
+```
+
+###
+
+ 🔍 **Signal API Funcional**
+
+Signals têm métodos funcionais poderosos que funcionam com arrays, Sets, Maps e qualquer iterável!
+
+#### **map()** - Transformação de Valores
+
+```typescript
+// Com valores simples
+const count = signal(1);
+const doubled = count.map(n => n * 2);
+doubled.subscribe(v => console.log(v)); // 2
+
+// Com arrays (funciona como array.map!)
+const numbers = signal([1, 2, 3]);
+const doubled = numbers.map(n => n * 2);
+doubled.subscribe(v => console.log(v)); // [2, 4, 6]
+
+// Com Sets, Maps - qualquer iterável!
+const uniqueNumbers = signal(new Set([1, 2, 3, 3]));
+const doubled = uniqueNumbers.map(n => n * 2);
+doubled.subscribe(v => console.log(v)); // [2, 4, 6]
+
+// Use case real: Renderizar lista
+render() {
+  return (
+    <ul>
+      {this.users.map(user => (
+        <li>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+#### **filter()** - Filtrar Valores
+
+```typescript
+// Filtrar arrays
+const numbers = signal([1, 2, 3, 4, 5]);
+const evens = numbers.filter(n => n % 2 === 0);
+evens.subscribe(v => console.log(v)); // [2, 4]
+
+// Use case real: Busca em lista
+render() {
+  return (
+    <ul>
+      {this.users
+        .filter(user => user.active)
+        .map(user => <li>{user.name}</li>)
+      }
+    </ul>
+  );
+}
+```
+
+#### **reduce()** - Redução de Valores
+
+```typescript
+// Soma de array
+const numbers = signal([1, 2, 3, 4, 5]);
+const sum = numbers.reduce((acc, n) => acc + n, 0);
+sum.subscribe(v => console.log(v)); // 15
+
+// Use case real: Totalizador
+render() {
+  return (
+    <div>
+      Total: ${this.cartItems.reduce((acc, item) => acc + item.price, 0)}
+    </div>
+  );
+}
+```
+
+#### **orElse()** - Valor Padrão/Fallback
+
+```typescript
+// Array vazio? Mostra fallback
+const items = signal([]);
+const display = items.orElse(() => [{ name: 'Nenhum item' }]);
+
+// Signal undefined? Mostra fallback
+const data = signal<User>();
+const safeData = data.orElse(() => { name: 'Loading...' });
+
+// Use case real: UI com fallback
+render() {
+  return (
+    <ul>
+      {this.users
+        .orElse(() => [{ name: 'No users found' }])
+        .map(user => <li>{user.name}</li>)
+        // Ou no final da pipe como um fallback
+        //.orElse(() => <li>No users found</li>)
+      }
+    </ul>
+  );
+}
+```
+
+#### **get()** - Deep Property Access
+
+```typescript
+const user = signal({
+  name: 'John',
+  address: {
+    city: 'NYC',
+    location: {
+      lat: 40.7128,
+      lng: -74.0060
+    }
+  }
+});
+
+// Acesso profundo com type-safety
+const city = user.get('address.city');
+const lat = user.get('address.location.lat');
+
+city.subscribe(v => console.log(v)); // 'NYC'
+```
+
+#### **Encadeamento (Chaining)**
+
+Combine todos os métodos!
+
+```typescript
+const users = signal([
+  { name: 'John', age: 25, active: true },
+  { name: 'Jane', age: 30, active: false },
+  { name: 'Bob', age: 35, active: true },
+]);
+
+// Encadeamento poderoso
+const activeUserNames = users
+  .filter(user => user.active)
+  .map(user => user.name.toUpperCase())
+  .orElse(() => ['No active users']);
+
+// No template
+render() {
+  return (
+    <div>
+      <h2>Active Users:</h2>
+      <ul>
+        {this.users
+          .filter(u => u.active)
+          .map(u => <li key={u.id}>{u.name}</li>)
+          .orElse(() => <li>No active users</li>)
+        }
+      </ul>
+
+      <p>
+        Total active: {this.users
+          .filter(u => u.active)
+          .reduce((acc) => acc + 1, 0)
+        }
+      </p>
+    </div>
+  );
+}
+```
+
+### ⚡ **@Watch Avançado**
+
+Configure watches com precisão cirúrgica.
+
+#### **skipInitialValue (Default: true)**
+
+```typescript
+export class SearchComponent extends Component {
+  search = signal('');
+
+  // Por padrão, não executa no mount (skipInitialValue: true)
+  @Watch('search')
+  onSearchChange(value: string) {
+    // Só roda quando usuário digita, não no mount
+    this.performSearch(value);
+  }
+
+  // Para executar imediatamente no mount
+  @Watch('counter', { skipInitialValue: false })
+  onCounterInit(value: number) {
+    // Roda imediatamente com o valor inicial
+    console.log('Initial value:', value);
+  }
+}
+```
+
+#### **Pipes RxJS**
+
+```typescript
+export class SearchComponent extends Component {
+  search = signal('');
+
+  // Pipes RxJS direto na config
+  @Watch('search', {
+    pipes: [
+      debounceTime(500),
+      distinctUntilChanged()
+    ]
+  })
+  onSearchDebounced(value: string) {
+    // Debounced + distinct
+    this.apiCall(value);
+  }
+
+  // Combinação de múltiplos operadores
+  @Watch('search', {
+    pipes: [
+      debounceTime(300),
+      distinctUntilChanged(),
+      filter(v => v.length > 2)
+    ]
+  })
+  onAdvancedSearch(value: string) {
+    // Debounce + distinct + filter
+    this.search(value);
+  }
+}
+```
+
+#### **Dot Notation**
+
+```typescript
+export class UserComponent extends Component {
+  user = signal({
+    profile: {
+      name: 'John',
+      address: {
+        city: 'NYC'
+      }
+    }
+  });
+
+  // Observa propriedades aninhadas
+  @Watch('user.profile.name')
+  onNameChange(name: string) {
+    console.log('Name changed:', name);
+  }
+
+  @Watch('user.profile.address.city')
+  onCityChange(city: string) {
+    console.log('City changed:', city);
+  }
+}
+```
+
+#### **Combinando Tudo**
+
+```typescript
+export class AdvancedComponent extends Component {
+  search = signal('');
+  user = signal({ profile: { name: 'John' } });
+
+  // Skip initial + pipes + tudo junto
+  @Watch('search', {
+    skipInitialValue: true,
+    pipes: [
+      debounceTime(300),
+      distinctUntilChanged(),
+      filter(v => v.length > 2)
+    ]
+  })
+  onSearch(value: string) {
+    this.performSearch(value);
+  }
+
+  // Dot notation + skip false
+  @Watch('user.profile.name', { skipInitialValue: false })
+  onNameChange(name: string) {
+    console.log('Name is:', name);
+  }
+}
+```
+
+### 📊 **Signal API - Tabela Resumo**
+
+| Método | Descrição | Retorna | Caso de Uso |
+|--------|-----------|---------|-------------|
+| `map()` | Transforma cada item | `Signal<U>` | Listas, transformações |
+| `filter()` | Filtra itens por condição | `Signal<T>` | Busca, filtros |
+| `reduce()` | Reduz a um único valor | `Signal<U>` | Totais, agregações |
+| `orElse()` | Valor padrão se vazio/undefined | `Signal<T \| U>` | Fallbacks, defaults |
+| `get()` | Acessa propriedade aninhada | `Signal<U>` | State profundo |
+| `then()` | Promise-like chaining | `Signal<U>` | Async/await |
+| `catch()` | Error handling | `Signal<U>` | Error boundaries |
+| `finally()` | Cleanup | `Signal<U>` | Finalization |
+| `isInitialized()` | Verifica se tem valor | `boolean` | Conditional rendering |
+
+### 🎨 **Exemplo Completo: Search com Todas Features**
+
+```typescript
+export class SmartSearch extends Component {
+  query = signal('');
+  results = signal<Result[]>([]);
+
+  @LoadData({ label: 'search' })
+  @Watch('query', {
+    skipInitialValue: true,  // Não busca vazio no mount
+    pipes: [
+      debounceTime(300),      // Espera user parar de digitar
+      distinctUntilChanged(), // Ignora valores repetidos
+      filter(q => q.length > 2) // Mínimo 3 caracteres
+    ]
+  })
+  async onSearch(query: string) {
+    try {
+      // Await signal como promise
+      const results = await this.api.search(query);
+      this.results.set(results);
+    } catch (error) {
+      this.results.set([]);
+    }
+  }
+
+  @LoadFragment({ states: [RenderState.LOADING], label: 'search' })
+  onSearchLoading(loading: boolean) {
+    return <Spinner />
+  }
+
+  @LoadFragment({
+    states: [RenderState.SUCCESS, RenderState.ERROR],
+    label: 'search',
+  })
+  onSearchResults() {
+    return (
+      <ul>
+          {this.results
+            .filter(r => r.score > 0.5)
+            .map(r => <li>{r.title}</li>)
+            .orElse(() => <li>No results found</li>)
+          }
+        </ul>
+    );
+  }
+
+  render() {
+    return (
+      <div>
+        <input
+          value={this.query}
+          onInput={(e) => this.query.set(e.target.value)}
+          placeholder="Search..."
+        />
+
+        <Loader fragment="search" />
+
+        <p>
+          Found: {this.results.reduce((acc) => acc + 1, 0)} results
+        </p>
+      </div>
+    );
+  }
+}
+```
+
+---
+
 ## 🎯 Comparação com Outros Frameworks
 
 | Feature | Mini Framework | React | Angular | SolidJS | Vue |
@@ -1078,7 +1481,7 @@ export class App extends Component {
       <div>
         <h1>Mini Framework</h1>
         <p>Count: {this.count}</p>
-        <button onClick={() => this.count.next(this.count.value + 1)}>
+        <button onClick={() => this.count.set(this.count.value + 1)}>
           Increment
         </button>
       </div>
@@ -1187,18 +1590,28 @@ Define slots para composição. Sem nome = slot default.
 
 ### Core Functions
 
-#### `signal<T>(initialValue: T): BehaviorSubject<T>`
-Cria um BehaviorSubject (observable com valor inicial).
+#### `signal<T>(initialValue: T): Signal<T>`
+Cria um Signal (observable com ou sem valor inicial).
 ```typescript
 const count = signal(0);
-count.next(1);
+count.set(1);
 console.log(count.value); // 1
 ```
 
-#### `unwrap<T>(signal: BehaviorSubject<T>): T`
+#### `unwrap<T>(signal: T): Promise<DeepUnwrapObservable<T>>`
 Extrai o valor atual de um signal.
 ```typescript
-const value = unwrap(count);
+const count = signal(0);
+const value = await unwrap(count); // 0
+
+const user = signal({
+  name: api.fetchUser(),
+  age: api.fetchUserAge(),
+  isAdmin: api.fetchUserIsAdmin(),
+  count
+});
+
+const result = await unwrap(user); // { name: "John", age: 30, isAdmin: false, count: 0 }
 ```
 
 ### Component Lifecycle
@@ -1246,7 +1659,7 @@ interface Guard {
 #### `Resolver<T>`
 ```typescript
 interface Resolver<T> {
-  resolve(): Promise<T> | Observable<T>;
+  resolve(): Promise<T> | Observable<T> | T;
 }
 ```
 
@@ -1903,7 +2316,7 @@ export class Counter extends Component {
   }
 
   increment() {
-    this.count.next(this.count.value + 1);
+    this.count.set(this.count.value + 1);
   }
 }
 ```

@@ -3,7 +3,7 @@
  * Provides component-specific route information and navigation methods
  */
 
-import { Injectable, InjectionScope } from "@mini/core";
+import { Injectable, InjectionScope, signal } from "@mini/core";
 import { router } from "./Router";
 import { map } from "rxjs";
 import type { Component } from "@mini/core";
@@ -36,7 +36,7 @@ export class RouterService {
    * Observable of route params
    */
   get params$() {
-    return router.route$.pipe(map((route) => route.params || {}));
+    return signal(router.route$.pipe(map((route) => route.params || {})));
   }
 
   /**
@@ -50,7 +50,7 @@ export class RouterService {
    * Observable of query params
    */
   get query$() {
-    return router.route$.pipe(map((route) => route.query));
+    return signal(router.route$.pipe(map((route) => route.query)));
   }
 
   /**

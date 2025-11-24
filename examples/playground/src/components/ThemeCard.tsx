@@ -61,7 +61,7 @@ export class ThemedCard extends Component {
         <p className={`mb-4 ${textClass}`}>
           This card uses the injected ThemeService to determine its styling.
         </p>
-        <p>Hello {this.user.get("name").orElse("World")}</p>
+        <p>Hello {this.user.get("name").orElse(() => "World")}</p>
         <div className="space-y-2">
           <div className={`p-3 rounded-lg border ${buttonClass}`}>
             <p className="text-sm font-medium">

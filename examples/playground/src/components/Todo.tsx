@@ -112,7 +112,9 @@ export class Todo extends Component {
                 </button>
               </li>
             ))
-            .orElse(<span>You don't have any items.</span>)}
+            .orElse(() => (
+              <span>You don't have any items.</span>
+            ))}
         </ul>
       </main>
     );

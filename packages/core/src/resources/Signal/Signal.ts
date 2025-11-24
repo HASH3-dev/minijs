@@ -1,4 +1,5 @@
-import { distinct, map, Observable, ReplaySubject, skip, take } from "rxjs";
+import { distinct, from, map, Observable, ReplaySubject, take } from "rxjs";
+import { DeepRequired } from "../../types";
 import { iterable } from "../../utils/iterable";
 import type {
   DeepPathType,
@@ -6,7 +7,7 @@ import type {
   UnwrapIterable,
   UnwrapObservable,
 } from "./types";
-import { DeepRequired } from "../../types";
+import { isPromise } from "./utils/deepPromiseAll";
 
 /**
  * A signal is a type of observable that emits a value and keeps state.
@@ -24,6 +25,10 @@ export class Signal<
 
   constructor(value?: T) {
     super(1);
+
+    if (isPromise(value) && !(value instanceof Signal)) {
+      value = from(value) as any;
+    }
 
     if (value instanceof Observable) {
       value.subscribe(this);
@@ -232,7 +237,10 @@ export class Signal<
    *
    * newSignal.subscribe((value) => console.log(value)); // output: <span>no value</span>
    */
-  orElse<K>(value: K, checker?: (value: R) => boolean): Signal<R> | Signal<K> {
+  orElse<K>(
+    value: () => K,
+    checker?: (value: R) => boolean
+  ): Signal<R> | Signal<K> {
     const s = new Signal(value);
 
     this.pipe(
@@ -240,14 +248,17 @@ export class Signal<
         return (
           checker
             ? checker(e)
-            : e === undefined || (Array.isArray(e) && e.length === 0)
+            : e === undefined ||
+              e === null ||
+              e === false ||
+              (Array.isArray(e) && e.length === 0)
         )
-          ? value
+          ? value()
           : e;
       })
     ).subscribe(s as any);
 
-    return s;
+    return s as any;
   }
 
   /**
