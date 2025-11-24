@@ -3,10 +3,11 @@ import {
   logComponentHierarchy,
   Mount,
   signal,
+  unwrap,
   UseProviders,
 } from "@mini/core";
 import { Route } from "@mini/router";
-import { interval, map, take, tap } from "rxjs";
+import { interval, map, tap } from "rxjs";
 import { Button } from "./components/Button";
 import { CounterJSX } from "./components/CounterJSX";
 import { DIExample } from "./components/DIExample";
@@ -61,6 +62,15 @@ export class App extends Component {
   async testPromiseLike() {
     const data = await this.unsigned;
     console.log("[SIGNAL AS A PROMISSE]", data);
+    const signalCombined = signal({
+      name: this.name,
+      nested: [this.counter, { list: this.list }],
+      teste: {
+        value: this.teste,
+      },
+    });
+
+    console.log("[SIGNAL COMBINED]", await unwrap(signalCombined));
   }
 
   addItem() {
