@@ -28,6 +28,10 @@ export class RenderResult {
     return [...this.nodes];
   }
 
+  getRenderedNodes(): Node[] | undefined {
+    return this.componentInstance?.getRenderedNodes();
+  }
+
   /**
    * Get the first node (useful for single-node renders)
    */
