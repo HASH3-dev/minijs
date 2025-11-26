@@ -93,6 +93,7 @@ export type MiniElement<T extends Element> = SignalProperties<
       | "slot"
       | "class"
       | "style"
+      | "ref"
       | ReadonlyKeys<T>
       | OnlyFunctions<T>
     >
@@ -100,6 +101,7 @@ export type MiniElement<T extends Element> = SignalProperties<
     children?: any;
     slot?: string;
     className?: string;
+    ref?: (el: T) => void;
   } & Partial<ReplaceEventHandlers<T, "on">> &
     Record<string, any>
 > & {

@@ -1,0 +1,281 @@
+import {
+  Component,
+  Inject,
+  logComponentHierarchy,
+  Mount,
+  signal,
+  unwrap,
+  UseProviders,
+} from "@mini/core";
+import { Route, RouterService } from "@mini/router";
+import { interval, map, tap } from "rxjs";
+import { UserRepository } from "../../repositories/user";
+import {
+  AlertService,
+  Footer,
+  Header,
+  LoadingContent,
+  MODAL,
+  Modal,
+} from "../../shared/components";
+import {
+  Button,
+  CounterJSX,
+  DIExample,
+  RefExample,
+  Todo,
+  ViewTransitionExample,
+  ViewTransitionPresetsExample,
+} from "./components";
+
+@Route("/")
+@UseProviders([
+  UserRepository,
+  { provide: Symbol.for("name"), useValue: "mini" },
+  AlertService,
+  { provide: MODAL, useValue: true },
+])
+export class Playground extends Component {
+  private name = signal("mini");
+  private counter = signal(0);
+  private list = signal([1, 2, 3]);
+  private teste = signal<number[]>([]);
+  private unsigned = signal<string>();
+
+  @Inject(RouterService) router!: RouterService;
+
+  get formatName() {
+    return this.name.pipe(
+      map((name) => name.charAt(0).toUpperCase() + name.slice(1))
+    );
+  }
+
+  @Mount()
+  onMount() {
+    // Log hierarchy after render completes
+    setTimeout(() => {
+      console.log("=== COMPONENT HIERARCHY ===");
+      logComponentHierarchy(this);
+      console.log("===========================");
+    }, 1000);
+
+    return interval(5000).pipe(
+      // take(0),
+      // tap(() => console.log("tap")),
+      tap(() => {
+        this.counter.set((counter) => counter + 1);
+        this.teste.set((teste) => [...teste, this.counter.value]);
+      })
+    );
+  }
+
+  @Mount()
+  onMount2() {
+    console.log("App mounted 2");
+    return () => console.log("App destroyed");
+  }
+
+  @Mount()
+  async testPromiseLike() {
+    const data = await this.unsigned;
+    console.log("[SIGNAL AS A PROMISSE]", data);
+    const signalCombined = signal({
+      name: this.name,
+      nested: [this.counter, { list: this.list }],
+      teste: {
+        value: this.teste,
+      },
+    });
+
+    console.log("[SIGNAL COMBINED]", await unwrap(signalCombined));
+  }
+
+  addItem() {
+    this.list.set((prev) => [...prev, prev.length + 1]);
+  }
+
+  render() {
+    return (
+      <div className="min-h-screen p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <header className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-slate-800 mb-4 bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text">
+              Mini Framework Playground
+            </h1>
+            <p className="text-slate-600 text-lg">
+              A modern reactive framework with JSX support
+            </p>
+          </header>
+
+          <h2>{this.unsigned}</h2>
+          <Button onClick={() => this.unsigned.set("Valor aplicado")}>
+            Add value
+          </Button>
+
+          {/* Modal Section */}
+          <div className="mb-8">
+            <Modal>
+              <p className="text-slate-700 mb-3">
+                This is the main content of the modal!
+              </p>
+              <p className="text-slate-600">It goes into the default slot.</p>
+              <LoadingContent />
+              <Footer slot="footer" />
+              <Header slot="header" />
+            </Modal>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Interactive Demo */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-4">
+                  Interactive Demo
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Your Name:
+                    </label>
+                    <input
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      value={this.name}
+                      onInput={(e: any) => this.name.set(e.target.value)}
+                      placeholder="Enter your name..."
+                    />
+                  </div>
+
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-slate-700">
+                      <span className="font-medium">Formatted:</span>{" "}
+                      <span className="text-blue-600">{this.formatName}</span>
+                    </p>
+                    <p className="text-slate-700">
+                      <span className="font-medium">Raw:</span>{" "}
+                      <span className="text-purple-600">{this.name}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conditional Rendering */}
+              <div>
+                {this.counter.map(
+                  (counter) =>
+                    counter % 2 === 0 && <CounterJSX name={this.name} />
+                )}
+              </div>
+            </div>
+
+            {/* Right Column - State Monitor */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-4">
+                  State Monitor
+                </h2>
+
+                <div className="space-y-3">
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-sm font-medium text-blue-700 mb-1">
+                      Auto Counter
+                    </p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {this.counter}
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <p className="text-sm font-medium text-purple-700 mb-1">
+                      Static List
+                    </p>
+                    <p className="text-lg font-mono text-purple-600">
+                      [{this.list}]
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                <h2 className="text-2xl font-semibold text-slate-800 mb-4">
+                  List Items
+                </h2>
+                <div className="space-y-2 mb-4">
+                  {this.list.map((item) => (
+                    <div className="bg-linear-to-r from-blue-500 to-purple-500 text-white rounded-lg p-3 font-medium shadow-md">
+                      Item: {item}
+                    </div>
+                  ))}
+                </div>
+                <Button className="w-full" onClick={() => this.addItem()}>
+                  + Add Item
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Dependency Injection Example */}
+          <div className="mt-12">
+            <DIExample />
+          </div>
+
+          <div className="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+            <Todo />
+          </div>
+
+          {/* ViewTransition Demo */}
+          <div className="mt-12">
+            <ViewTransitionExample />
+          </div>
+
+          {/* ViewTransition Presets Gallery */}
+          <div className="mt-12">
+            <ViewTransitionPresetsExample />
+          </div>
+
+          {/* Ref Example */}
+          <div className="mt-12">
+            <RefExample />
+          </div>
+
+          {/* Navigation Links */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Link to Product Gallery */}
+            <div className="p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl text-center">
+              <h2 className="text-3xl font-bold text-white mb-3">
+                🎨 Product Gallery
+              </h2>
+              <p className="text-white/90 mb-6">
+                See ViewTransition in action with real page navigation!
+              </p>
+              <button
+                onClick={() => this.router.push("/products")}
+                className="px-8 py-4 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                View Products →
+              </button>
+            </div>
+
+            {/* Link to Contact Page */}
+            <div className="p-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl shadow-xl text-center">
+              <h2 className="text-3xl font-bold text-white mb-3">
+                📧 Contact Us
+              </h2>
+              <p className="text-white/90 mb-6">
+                Try our contact form with repository pattern and components!
+              </p>
+              <button
+                onClick={() => this.router.push("/contacts")}
+                className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                Get in Touch →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}

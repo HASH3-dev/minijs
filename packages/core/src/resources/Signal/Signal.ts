@@ -148,7 +148,7 @@ export class Signal<
    * const newSignal = signal.map((value) => value + 1);
    * newSignal.subscribe((value) => console.log(value)); // output: [2, 3, 4]
    */
-  map<U, J = UnwrapIterable<R>>(fn: (value: J) => U): Signal<U> {
+  map<U, J = UnwrapIterable<R>>(fn: (value: J, index: number) => U): Signal<U> {
     const s = new Signal<U>();
 
     this.pipe(map((e) => iterable(e).map(fn as any))).subscribe(s as any);

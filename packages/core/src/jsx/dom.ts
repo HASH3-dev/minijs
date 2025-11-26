@@ -40,8 +40,20 @@ export const applyProps = (
       appendChildren(el, v, componentInstance);
       continue;
     }
+    // Handle ref prop - call the function with the element
+    if (k === "ref" && typeof v === "function") {
+      v(el);
+      continue;
+    }
     if (k.startsWith("on") && typeof v === "function") {
       el.addEventListener(k.slice(2).toLowerCase(), v as any);
+      continue;
+    }
+
+    if (k === "style") {
+      for (const [sk, sv] of Object.entries(v as object)) {
+        el.style[sk as any] = sv as any;
+      }
       continue;
     }
 
@@ -59,6 +71,50 @@ export const applyProps = (
     }
   }
   (el as any)[SUBSCRIPTIONS] = subs;
+};
+
+/**
+ * Render component placeholders found inside a Node
+ */
+export const renderPlaceholdersInNode = (
+  node: Node,
+  parentComponent?: Component
+) => {
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_COMMENT, null);
+
+  const placeholdersToRender: Array<{
+    placeholder: Comment;
+    component: Component;
+  }> = [];
+
+  // Collect all placeholders first
+  let currentNode: Node | null = walker.nextNode();
+  while (currentNode) {
+    const comment = currentNode as Comment;
+    const component = (comment as any)[COMPONENT_PLACEHOLDER];
+
+    if (component instanceof Component) {
+      placeholdersToRender.push({ placeholder: comment, component });
+    }
+
+    currentNode = walker.nextNode();
+  }
+
+  // Render all collected placeholders
+  placeholdersToRender.forEach(({ placeholder, component }) => {
+    const renderResult = Application.render(component, undefined, {
+      parent: parentComponent,
+    });
+
+    // Insert rendered nodes before the placeholder
+    renderResult.insertBefore(
+      placeholder.parentNode! as HTMLElement,
+      placeholder
+    );
+
+    // Remove the placeholder comment
+    placeholder.remove();
+  });
 };
 
 /**
@@ -82,6 +138,8 @@ export const appendChildren = (
     return;
   } else if (child instanceof Node) {
     el.appendChild(child);
+    // Renderizar placeholders dentro do Node
+    renderPlaceholdersInNode(child, parentComponent);
     return;
   } else if (child instanceof Component) {
     const placeholder = document.createComment("component-placeholder");
@@ -207,6 +265,8 @@ export const appendChildren = (
         } else if (item instanceof Node) {
           fragment.appendChild(item);
           currentNodes.push(item as ChildNode);
+          // Renderizar placeholders dentro do Node
+          renderPlaceholdersInNode(item, parentComponent);
         } else if (item != null && item !== false) {
           const textNode = document.createTextNode(String(item ?? ""));
           fragment.appendChild(textNode);
@@ -229,9 +289,17 @@ export const appendChildren = (
         const children = Array.from(val.childNodes);
         endMarker.parentNode?.insertBefore(val, endMarker);
         currentNodes.push(...children);
+
+        // Renderizar placeholders dentro dos children do fragment
+        children.forEach((child) => {
+          renderPlaceholdersInNode(child, parentComponent);
+        });
       } else {
         endMarker.parentNode?.insertBefore(val, endMarker);
         currentNodes.push(val as ChildNode);
+
+        // Renderizar placeholders dentro do Node
+        renderPlaceholdersInNode(val, parentComponent);
       }
       return;
     }

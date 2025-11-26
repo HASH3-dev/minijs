@@ -3,7 +3,12 @@ export const iterable = <T>(entity: Iterable<T> | T): T[] => {
     return [entity];
   }
 
-  const itr = Array.from(entity as any);
+  let itr: T[] = [];
+  try {
+    itr = Array.from(entity as any);
+  } catch (error) {
+    itr = [entity].flat() as T[];
+  }
 
   if (itr.length === 0) {
     return [entity].flat() as T[];

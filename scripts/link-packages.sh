@@ -8,7 +8,7 @@ echo "📦 Building packages..."
 npm run build
 
 # Array of packages in dependency order
-PACKAGES=("core" "router" "vite-plugin" "cli")
+PACKAGES=("core" "common" "router" "vite-plugin" "cli" "mcp-server")
 
 echo ""
 # Link each package

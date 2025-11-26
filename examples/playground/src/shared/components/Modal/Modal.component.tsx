@@ -1,0 +1,37 @@
+import { Component, Child, ChildType, Mount, UseProviders } from "@mini/core";
+import { Footer } from "./Footer.component";
+import { Header } from "./Header.component";
+import { Inject } from "@mini/core";
+import { MODAL } from "./constants";
+import { UserRepository } from "../../../repositories/user";
+
+@UseProviders([{ provide: MODAL, useValue: true }, UserRepository])
+export class Modal extends Component {
+  @Child("header") header!: Header;
+  @Child("footer") footer!: Footer;
+  @Child() content!: ChildType;
+
+  @Inject(MODAL) modal!: boolean;
+
+  @Mount()
+  mounted() {
+    console.log("Modal mounted", this.modal);
+  }
+
+  render() {
+    // console.log("Modal render", this.header.childrenNodes);
+    return (
+      <>
+        <div className="bg-white rounded-2xl shadow-xl border-2 border-slate-300 overflow-hidden">
+          <div className="bg-linear-to-r from-blue-600 to-purple-600 px-6 py-4">
+            {this.header}
+          </div>
+          <div className="px-6 py-5 bg-slate-50">{this.content}</div>
+          <div className="bg-white px-6 py-4 border-t border-slate-200 flex justify-end">
+            {this.footer}
+          </div>
+        </div>
+      </>
+    );
+  }
+}
