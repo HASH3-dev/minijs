@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mini/common": "*",
     "@mini/core": "*",
     "@mini/router": "*",
     "reflect-metadata": "^0.2.2",

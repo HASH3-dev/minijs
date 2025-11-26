@@ -14,6 +14,7 @@ interface ProjectConfig {
   name: string;
   includeRouter: boolean;
   includeTailwind: boolean;
+  includeMCP: boolean;
   packageManager: "npm" | "yarn" | "pnpm";
 }
 
@@ -49,6 +50,24 @@ async function createProject(targetDir: string, config: ProjectConfig) {
       // Copy Tailwind config files
       const tailwindTemplate = path.join(__dirname, "../templates/tailwind");
       await fs.copy(tailwindTemplate, targetDir, { overwrite: true });
+    }
+
+    // Add MCP Server if selected
+    if (config.includeMCP) {
+      packageJson.devDependencies["@mini/mcp-server"] = "^1.0.0";
+
+      // Create MCP config file
+      const mcpConfig = {
+        mcpServers: {
+          minijs: {
+            command: "npx",
+            args: ["@mini/mcp-server"],
+          },
+        },
+      };
+
+      const mcpConfigPath = path.join(targetDir, "mcp-config.json");
+      await fs.writeJson(mcpConfigPath, mcpConfig, { spaces: 2 });
     }
 
     await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
@@ -111,6 +130,11 @@ async function main() {
           message: "Include Tailwind CSS?",
           initialValue: true,
         }),
+      includeMCP: () =>
+        p.confirm({
+          message: "Include MCP Server for AI assistance?",
+          initialValue: false,
+        }),
       packageManager: () =>
         p.select({
           message: "Select a package manager:",
@@ -150,19 +174,29 @@ async function main() {
   try {
     await createProject(targetDir, project as ProjectConfig);
 
+    const projectName = project.name as string;
+    const devCommand =
+      project.packageManager === "npm" ? "npm run" : project.packageManager;
+
+    const mcpInfo = project.includeMCP
+      ? `
+
+🤖 MCP Server installed!
+  To use with Claude Desktop, add mcp-config.json to your Claude config:
+  ${pc.cyan("~/.config/Claude/claude_desktop_config.json")} (Linux)
+  ${pc.cyan(
+    "~/Library/Application Support/Claude/claude_desktop_config.json"
+  )} (macOS)`
+      : "";
+
     p.outro(
-      pc.green(
-        `\n✨ Project ${pc.bold(
-          project.name as string
-        )} created successfully!\n\n` +
-          `Next steps:\n` +
-          `  cd ${project.name}\n` +
-          `  ${
-            project.packageManager === "npm"
-              ? "npm run"
-              : project.packageManager
-          } dev\n`
-      )
+      pc.green(`
+✨ Project ${pc.bold(projectName)} created successfully!
+
+Next steps:
+  cd ${projectName}
+  ${devCommand} dev${mcpInfo}
+`)
     );
   } catch (error) {
     p.cancel("Failed to create project");

@@ -1,7 +1,7 @@
 import { PARENT_COMPONENT } from "../constants";
 import { getChildSlots } from "../resources/Child";
 import type { MiniElement } from "../types";
-import { applyProps } from "./dom";
+import { applyProps, renderPlaceholdersInNode } from "./dom";
 import { processSlottedChildren } from "./slots";
 
 export const Fragment = (props: { children?: any } = {}) => {
@@ -23,6 +23,8 @@ export const Fragment = (props: { children?: any } = {}) => {
     children.forEach((child) => {
       if (child instanceof Node) {
         fragment.appendChild(child);
+        // Renderizar placeholders dentro do Node
+        renderPlaceholdersInNode(child);
       } else if (child != null) {
         // Convert primitives to text nodes
         fragment.appendChild(document.createTextNode(String(child)));

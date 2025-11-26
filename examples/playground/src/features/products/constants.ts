@@ -1,0 +1,148 @@
+import type { Product } from "./types";
+
+export const PRODUCTS: Record<number, Product> = {
+  1: {
+    id: 1,
+    name: "MacBook Pro 16",
+    image: "https://picsum.photos/seed/laptop/600/400",
+    price: 2499,
+    category: "Laptops",
+    description:
+      "The most powerful MacBook Pro ever is here. With the blazing-fast M3 Max chip, this laptop delivers exceptional performance for demanding professional workflows.",
+    features: [
+      "M3 Max chip with up to 16-core CPU",
+      "Up to 40-core GPU",
+      "Up to 128GB unified memory",
+      "Liquid Retina XDR display",
+      "Up to 22 hours battery life",
+      "Advanced camera and audio",
+    ],
+    specs: [
+      { label: "Display", value: '16.2" Liquid Retina XDR' },
+      { label: "Processor", value: "Apple M3 Max" },
+      { label: "Memory", value: "Up to 128GB" },
+      { label: "Storage", value: "Up to 8TB SSD" },
+      { label: "Weight", value: "4.8 pounds" },
+    ],
+  },
+  2: {
+    id: 2,
+    name: "Magic Mouse",
+    image: "https://picsum.photos/seed/mouse/600/400",
+    price: 79,
+    category: "Accessories",
+    description:
+      "Magic Mouse is wireless and rechargeable, with an optimized foot design that lets it glide smoothly across your desk. The Multi-Touch surface allows you to perform simple gestures.",
+    features: [
+      "Wireless and rechargeable",
+      "Multi-Touch surface",
+      "Optimized design",
+      "Lightning port for charging",
+      "Pairs automatically with Mac",
+      "Includes woven USB‑C to Lightning Cable",
+    ],
+    specs: [
+      { label: "Battery", value: "Rechargeable lithium-ion" },
+      { label: "Connectivity", value: "Bluetooth" },
+      { label: "Compatibility", value: "Mac with macOS 11.3 or later" },
+      { label: "Weight", value: "0.22 pounds" },
+      { label: "Dimensions", value: "4.47 x 2.25 x 0.85 inches" },
+    ],
+  },
+  3: {
+    id: 3,
+    name: "iPhone 15 Pro",
+    image: "https://picsum.photos/seed/phone/600/400",
+    price: 999,
+    category: "Phones",
+    description:
+      "iPhone 15 Pro. Forged in titanium and featuring the groundbreaking A17 Pro chip, a customizable Action button, and the most powerful iPhone camera system ever.",
+    features: [
+      "Titanium design",
+      "A17 Pro chip",
+      "Pro camera system",
+      "Action button",
+      "Always-On display",
+      "Dynamic Island",
+    ],
+    specs: [
+      { label: "Display", value: '6.1" Super Retina XDR' },
+      { label: "Processor", value: "A17 Pro chip" },
+      { label: "Camera", value: "48MP Main | 12MP Ultra Wide" },
+      { label: "Storage", value: "128GB - 1TB" },
+      { label: "Weight", value: "6.60 ounces" },
+    ],
+  },
+  4: {
+    id: 4,
+    name: "iPad Pro",
+    image: "https://picsum.photos/seed/tablet/600/400",
+    price: 799,
+    category: "Tablets",
+    description:
+      "iPad Pro features the powerful M2 chip with an 8-core CPU and 10-core GPU, delivering desktop-class performance. The advanced displays feature ProMotion and support for the Apple Pencil hover experience.",
+    features: [
+      "M2 chip",
+      "12.9-inch Liquid Retina XDR display",
+      "ProMotion technology",
+      "12MP Wide camera",
+      "Face ID",
+      "Thunderbolt / USB 4 support",
+    ],
+    specs: [
+      { label: "Display", value: '12.9" Liquid Retina XDR' },
+      { label: "Processor", value: "Apple M2" },
+      { label: "Memory", value: "8GB or 16GB" },
+      { label: "Storage", value: "128GB - 2TB" },
+      { label: "Weight", value: "1.5 pounds" },
+    ],
+  },
+  5: {
+    id: 5,
+    name: "AirPods Pro",
+    image: "https://picsum.photos/seed/audio/600/400",
+    price: 249,
+    category: "Audio",
+    description:
+      "AirPods Pro feature Active Noise Cancellation for immersive sound. Transparency mode for hearing the world around you. A customizable fit for all-day comfort.",
+    features: [
+      "Active Noise Cancellation",
+      "Transparency mode",
+      "Adaptive Audio",
+      "Personalized Spatial Audio",
+      "MagSafe charging case",
+      "Up to 6 hours listening time",
+    ],
+    specs: [
+      { label: "Chip", value: "H2 chip" },
+      { label: "Battery Life", value: "Up to 6 hours" },
+      { label: "Charging", value: "MagSafe, Qi, Lightning" },
+      { label: "Water Resistance", value: "IPX4" },
+      { label: "Weight", value: "0.19 ounces per earbud" },
+    ],
+  },
+  6: {
+    id: 6,
+    name: "Apple Watch",
+    image: "https://picsum.photos/seed/watch/600/400",
+    price: 399,
+    category: "Wearables",
+    description:
+      "Apple Watch Series 9 features the S9 SiP, a custom Apple silicon chip that enables a super-bright display and a magical new way to use your watch without touching the screen.",
+    features: [
+      "S9 SiP chip",
+      "Double tap gesture",
+      "Up to 18 hours battery",
+      "Always-On Retina display",
+      "Blood Oxygen sensor",
+      "ECG app",
+    ],
+    specs: [
+      { label: "Display", value: "Always-On Retina LTPO OLED" },
+      { label: "Chip", value: "S9 SiP" },
+      { label: "Battery", value: "Up to 18 hours" },
+      { label: "Water Resistance", value: "50 meters" },
+      { label: "Case Sizes", value: "41mm or 45mm" },
+    ],
+  },
+};

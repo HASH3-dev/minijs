@@ -1,7 +1,7 @@
-import "./globals.css";
+import "./styles/globals.css";
 
 import { Application } from "@mini/core";
-import { App } from "./App";
+import { AppRouter } from "./AppRouter";
 
-const application = new Application(App);
+const application = new Application(AppRouter);
 application.mount("#app");
