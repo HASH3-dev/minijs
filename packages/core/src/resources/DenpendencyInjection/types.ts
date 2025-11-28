@@ -1,3 +1,5 @@
+import { InjectionToken } from "../Provider/InjectionToken";
+
 /**
  * Token type for dependency injection
  * Can be a constructor function (class), abstract class, or symbol
@@ -5,7 +7,8 @@
 export type Token<T = any> =
   | (abstract new (...args: any[]) => T)
   | (new (...args: any[]) => T)
-  | symbol;
+  | symbol
+  | InjectionToken<T>;
 
 /**
  * Injection scope type for different lifecycle behaviors

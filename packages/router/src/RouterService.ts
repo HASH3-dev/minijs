@@ -61,10 +61,21 @@ export class RouterService {
   }
 
   /**
+   * Observable of hash
+   */
+  get hash$() {
+    return signal(router.route$.pipe(map((route) => route.hash)));
+  }
+
+  /**
    * Get full URL href
    */
   get href(): string {
     return window.location.href;
+  }
+
+  get href$() {
+    return signal(router.route$.pipe(map(() => window.location.href)));
   }
 
   /**
@@ -74,6 +85,10 @@ export class RouterService {
     return window.location.protocol;
   }
 
+  get protocol$() {
+    return signal(router.route$.pipe(map(() => window.location.protocol)));
+  }
+
   /**
    * Get host (hostname:port)
    */
@@ -81,11 +96,19 @@ export class RouterService {
     return window.location.host;
   }
 
+  get host$() {
+    return signal(router.route$.pipe(map(() => window.location.host)));
+  }
+
   /**
    * Get pathname
    */
   get pathname(): string {
     return router.currentPath;
+  }
+
+  get pathname$() {
+    return signal(router.route$.pipe(map((route) => route.path)));
   }
 
   /**

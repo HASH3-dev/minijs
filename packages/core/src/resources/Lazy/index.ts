@@ -1,1 +1,1 @@
-export { Lazy } from "./components/Lazy";
+export { Lazy } from "./macro";

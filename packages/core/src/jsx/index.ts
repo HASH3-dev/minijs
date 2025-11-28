@@ -45,6 +45,57 @@ export function jsx(type: any, props: any, key?: any) {
 export const jsxs = console.log;
 export const jsxDEV = console.log;
 
+// SVG elements that need to be created with SVG namespace
+const SVG_TAGS = new Set([
+  "svg",
+  "path",
+  "circle",
+  "rect",
+  "line",
+  "polyline",
+  "polygon",
+  "ellipse",
+  "g",
+  "text",
+  "tspan",
+  "defs",
+  "use",
+  "symbol",
+  "marker",
+  "clipPath",
+  "mask",
+  "pattern",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "image",
+  "foreignObject",
+  "animate",
+  "animateTransform",
+  "animateMotion",
+  "set",
+  "feBlend",
+  "feColorMatrix",
+  "feComponentTransfer",
+  "feComposite",
+  "feConvolveMatrix",
+  "feDiffuseLighting",
+  "feDisplacementMap",
+  "feFlood",
+  "feGaussianBlur",
+  "feImage",
+  "feMerge",
+  "feMorphology",
+  "feOffset",
+  "feSpecularLighting",
+  "feTile",
+  "feTurbulence",
+  "filter",
+  "title",
+  "desc",
+  "metadata",
+]);
+
 export function createElement(type: any, props: any, parent: any): Node {
   if (typeof type === "function") {
     // Special case: Fragment is a function but not a component class
@@ -91,8 +142,11 @@ export function createElement(type: any, props: any, parent: any): Node {
     return componentInstance;
   }
 
-  // DOM element
-  const el = document.createElement(type);
+  // Create SVG element with proper namespace if needed
+  const el = SVG_TAGS.has(type)
+    ? document.createElementNS("http://www.w3.org/2000/svg", type)
+    : document.createElement(type);
+
   // Parent will be passed by applyProps when needed
   applyProps(el, props, parent);
   return el;

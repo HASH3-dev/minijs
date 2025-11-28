@@ -23,6 +23,7 @@ import {
   CounterJSX,
   DIExample,
   RefExample,
+  SvgTest,
   Todo,
   ViewTransitionExample,
   ViewTransitionPresetsExample,
@@ -238,6 +239,11 @@ export class Playground extends Component {
           {/* Ref Example */}
           <div className="mt-12">
             <RefExample />
+          </div>
+
+          {/* SVG Test */}
+          <div className="mt-12 bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+            <SvgTest />
           </div>
 
           {/* Navigation Links */}

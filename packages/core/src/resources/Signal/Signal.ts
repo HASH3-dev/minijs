@@ -223,6 +223,37 @@ export class Signal<
   }
 
   /**
+   * Returns the first value emitted by the signal that passes the given function.
+   * The function will receive the unwrapped value of the signal as an argument.
+   * The return value of the function will be used to determine whether the value should be emitted or not.
+   * The function will be called for each value emitted by the signal.
+   * If the function returns true, the value will be emitted. If the function returns false, the value will be skipped.
+   * @template J The type of the value emitted by this signal.
+   * @param fn The function to apply to each value emitted by the signal.
+   * @returns A new signal that emits the first value that passes the filter.
+   * @example
+   * const signal = new Signal(1);
+   * const newSignal = signal.find((value) => value % 2 === 0);
+   * newSignal.subscribe((value) => console.log(value)); // output: undefined
+   * // works with an Array as well
+   * const signal = new Signal([1, 2, 3, 4]);
+   * const newSignal = signal.find((value) => value % 2 === 0);
+   * newSignal.subscribe((value) => console.log(value)); // output: 2
+   * // or with any other iterable object as well, like a Set for example
+   * const signal = new Signal(new Set([1, 2, 3, 3]));
+   * const newSignal = signal.find((value) => value % 2 === 0);
+   * newSignal.subscribe((value) => console.log(value)); // output: 2
+   */
+  find<J = UnwrapIterable<R>>(
+    fn: (value: J) => boolean
+  ): Signal<R | undefined> {
+    const s = new Signal<R | undefined>();
+    this.pipe(map((e) => iterable(e).find(fn as any))).subscribe(s as any);
+
+    return s;
+  }
+
+  /**
    * If the signal emits a value that is undefined or an empty array, or if a checker function is provided and it returns true, emits the given value instead.
    * If the signal emits a value that is not undefined or an empty array, or if the checker function returns false, emits the original value.
    * @template K The type of the value to emit if the signal emits an undefined or empty array value.
