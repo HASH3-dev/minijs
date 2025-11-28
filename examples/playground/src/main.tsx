@@ -1,4 +1,4 @@
-import "./styles.css";
+import "./styles/globals.css";
 
 import { Application } from "@mini/core";
 // import { App } from "./App";

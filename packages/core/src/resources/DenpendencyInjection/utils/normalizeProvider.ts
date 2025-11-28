@@ -1,3 +1,4 @@
+import { InjectionToken } from "../../Provider/InjectionToken";
 import { Provider, ProviderShorthand } from "../types";
 
 /**
@@ -10,6 +11,15 @@ export function normalizeProvider(provider: ProviderShorthand): Provider {
       provide: provider,
       useClass: provider as new (...args: any[]) => any,
     };
+  }
+
+  if (provider && typeof provider === "object" && "provide" in provider) {
+    if (provider.provide instanceof InjectionToken) {
+      return {
+        ...provider,
+        provide: provider.provide.toString(),
+      };
+    }
   }
 
   // Already a full provider

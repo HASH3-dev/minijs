@@ -16,8 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --dts --format esm --sourcemap",
-    "dev": "tsup src/index.ts --dts --format esm --sourcemap --watch"
+    "build": "tsup src/index.ts src/lazyTransform.ts --dts --format esm --sourcemap",
+    "dev": "tsup src/index.ts src/lazyTransform.ts --dts --format esm --sourcemap --watch"
   },
   "keywords": [
     "vite",
@@ -28,8 +28,16 @@
   "peerDependencies": {
     "vite": "^7.2.2"
   },
+  "dependencies": {
+    "@babel/parser": "^7.26.2",
+    "@babel/traverse": "^7.26.4",
+    "@babel/generator": "^7.26.2",
+    "@babel/types": "^7.26.0"
+  },
   "devDependencies": {
     "@rollup/plugin-inject": "^5.0.5",
+    "@types/babel__traverse": "^7.20.6",
+    "@types/babel__generator": "^7.6.8",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.2"

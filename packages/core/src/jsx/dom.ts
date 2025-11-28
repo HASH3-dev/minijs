@@ -10,9 +10,56 @@ import {
 import { toObservable } from "../helpers";
 
 /**
- * Set attribute on an HTML element
+ * SVG attributes that need special handling (case-sensitive)
  */
-export const setAttr = (el: HTMLElement, k: string, v: any) => {
+const SVG_ATTRIBUTES = new Set([
+  "viewBox",
+  "preserveAspectRatio",
+  "xmlns",
+  "xmlnsXlink",
+  "xmlSpace",
+  "fillOpacity",
+  "strokeOpacity",
+  "strokeWidth",
+  "strokeLinecap",
+  "strokeLinejoin",
+  "strokeDasharray",
+  "strokeDashoffset",
+  "strokeMiterlimit",
+  "clipPath",
+  "textAnchor",
+  "dominantBaseline",
+  "baselineShift",
+  "fontFamily",
+  "fontSize",
+  "fontWeight",
+  "fontStyle",
+]);
+
+/**
+ * Set attribute on an HTML/SVG element
+ */
+export const setAttr = (el: HTMLElement | SVGElement, k: string, v: any) => {
+  // For SVG elements, prefer setAttribute for most attributes
+  if (el instanceof SVGElement) {
+    // Handle special SVG attributes or use setAttribute
+    if (k === "className") {
+      el.setAttribute("class", String(v));
+    } else if (k === "xlinkHref" || k === "xlink:href") {
+      el.setAttributeNS("http://www.w3.org/1999/xlink", "href", String(v));
+    } else if (k === "xmlnsXlink") {
+      el.setAttributeNS(
+        "http://www.w3.org/2000/xmlns/",
+        "xmlns:xlink",
+        String(v)
+      );
+    } else {
+      el.setAttribute(k, String(v));
+    }
+    return;
+  }
+
+  // For HTML elements, try property first
   if (k in el) {
     try {
       (el as any)[k] = v;

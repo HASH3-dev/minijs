@@ -8,7 +8,7 @@ import { Token } from "../types";
 /**
  * Get a readable name for a token
  */
-function getTokenName(token: Token): string {
+function getTokenName(token: Token): string | symbol {
   if (typeof token === "function") {
     return token.name || "AnonymousClass";
   }
@@ -71,11 +71,11 @@ function validateAllDependencies(): string[] {
 
   // Iterate over all registered injectables
   injectables.forEach((metadata: any, token: Token) => {
-    const tokenName = getTokenName(token);
+    const tokenName = String(getTokenName(token));
 
     for (const dep of metadata.dependencies) {
       if (!injectables.has(dep)) {
-        const depName = getTokenName(dep);
+        const depName = String(getTokenName(dep));
         errors.push(
           `${tokenName} depends on ${depName}, but ${depName} is not decorated with @Injectable()`
         );
