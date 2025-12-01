@@ -195,11 +195,17 @@ function generateLazyComponent(info: LazyCallInfo): string {
   return `(() => {
   ${routeDecorator}
   class ${className} extends Component {
+    loadedComponent: any = null;
     render() {
-      return import("${info.path}").then((m) => {
-        Route("/")(m.${info.component});
-        return <m.${info.component} />
-      });
+      if (this.loadedComponent) {
+        return <this.loadedComponent />;
+      } else {
+        return import("${info.path}").then((m) => {
+          Route("/")(m.${info.component});
+          this.loadedComponent = m.${info.component};
+          return <m.${info.component} />
+        });
+      }
     }
   }
   return ${className};
