@@ -1,4 +1,12 @@
-import { distinct, from, map, Observable, ReplaySubject, take } from "rxjs";
+import {
+  distinct,
+  from,
+  map,
+  mergeMap,
+  Observable,
+  ReplaySubject,
+  take,
+} from "rxjs";
 import { DeepRequired } from "../../types";
 import { iterable } from "../../utils/iterable";
 import type {
@@ -59,6 +67,22 @@ export class Signal<
   next(value: R): void {
     this._value = value;
     this._initialized = true;
+
+    if (value instanceof Observable) {
+      value.subscribe({
+        next: (resolvedValue) => super.next(resolvedValue),
+        error: (err) => super.error(err),
+        complete: () => super.complete(),
+      });
+      return;
+    }
+    if (isPromise(value)) {
+      value
+        .then((resolvedValue) => super.next(resolvedValue))
+        .catch(super.error);
+      return;
+    }
+
     super.next(value);
   }
 
@@ -151,7 +175,10 @@ export class Signal<
   map<U, J = UnwrapIterable<R>>(fn: (value: J, index: number) => U): Signal<U> {
     const s = new Signal<U>();
 
-    this.pipe(map((e) => iterable(e).map(fn as any))).subscribe(s as any);
+    this.pipe(
+      map((e) => iterable(e).map(fn as any)),
+      mergeMap((e) => Promise.all(e))
+    ).subscribe(s as any);
 
     return s;
   }
