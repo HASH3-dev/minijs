@@ -8,7 +8,7 @@ import {
   UseProviders,
 } from "@mini/core";
 import { Route, RouterService } from "@mini/router";
-import { interval, map, tap } from "rxjs";
+import { interval, map, mergeMap, tap } from "rxjs";
 import { UserRepository } from "../../repositories/user";
 import {
   AlertService,
@@ -98,6 +98,21 @@ export class Playground extends Component {
   render() {
     return (
       <div className="min-h-screen p-8">
+        <pre>
+          <code>
+            {signal([signal([1, 2, 3])])}
+            <br />
+            {this.counter.pipe(
+              mergeMap((count) => this.list.filter((item) => item > count))
+            )}
+            <br />
+            {this.counter
+              .map((count) => this.list.filter((item) => item > count))
+              .map((e) => (
+                <span className="text-red-500">{e}</span>
+              ))}
+          </code>
+        </pre>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <header className="text-center mb-12">

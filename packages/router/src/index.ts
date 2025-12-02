@@ -41,3 +41,7 @@ export type {
 // Export RouteSwitcher component
 export { RouteSwitcher } from "./RouteSwitcher";
 export type { RouteSwitcherProps } from "./RouteSwitcher";
+
+// Export Link component and types
+export { Link } from "./components/Link";
+export type { LinkProps } from "./components/Link";
