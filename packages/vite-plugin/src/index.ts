@@ -1,5 +1,5 @@
-import type { Plugin, UserConfig } from "vite";
 import inject from "@rollup/plugin-inject";
+import type { PluginOption, UserConfig } from "vite";
 import { lazyTransformPlugin } from "./lazyTransform";
 
 /**
@@ -17,7 +17,7 @@ import { lazyTransformPlugin } from "./lazyTransform";
  * });
  * ```
  */
-export default function miniPlugin(): Plugin[] {
+export default function miniPlugin(): PluginOption {
   const jsxImportSource = "@mini/core";
   const jsxFactory = "this.jsx";
   const jsxFragment = "Fragment";

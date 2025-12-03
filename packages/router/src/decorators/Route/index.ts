@@ -10,11 +10,7 @@ import {
   ROUTE_SEGMENT_CACHE,
 } from "./constants";
 import type { RouteConfig, RouteMetadataStored } from "./types";
-import {
-  Component,
-  ComponentClass,
-  PARENT_COMPONENT,
-} from "@mini/core/jsx-runtime";
+import { Component, ComponentClass, PARENT_COMPONENT } from "@mini/core";
 
 /**
  * Decorator to mark a component as a route
@@ -83,6 +79,9 @@ export function getAscenssorRoutePath(
     fullPath = getRoutePath(parent) + fullPath;
     parent = (parent as any)[PARENT_COMPONENT];
   }
+
+  // TODO: precisa funcionar com BASE_URL que n termina com /
+  fullPath = (import.meta.env.BASE_URL + fullPath).replace(/(\/\/*)/g, "/");
 
   (target as any)[ROUTE_SEGMENT_CACHE] = fullPath;
   return fullPath;
