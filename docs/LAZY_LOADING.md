@@ -27,23 +27,79 @@ export class AppRouter extends Component {
 }
 ```
 
+### Com Customização de Loading e Error
+
+```typescript
+import { Component, Lazy } from "@mini/core";
+import { RouteSwitcher } from "@mini/router";
+
+export class AppRouter extends Component {
+  render() {
+    return (
+      <RouteSwitcher>
+        {() => [
+          // Com loading e error customizados
+          Lazy("./features/contacts#ContactPage", {
+            loading: () => <div class="spinner">Carregando contatos...</div>,
+            error: (error) => (
+              <div class="error">
+                <h3>Erro ao carregar</h3>
+                <p>{error.message}</p>
+              </div>
+            ),
+          }),
+        ]}
+      </RouteSwitcher>
+    );
+  }
+}
+```
+
 ### Como Funciona
 
-**1. Código Original:**
+**1. Código Original (Simples):**
 ```typescript
 Lazy("./features/contacts#ContactPage")
 ```
 
-**2. Durante Build (Vite Plugin):**
+**2. Código Original (Com Opções):**
+```typescript
+Lazy("./features/contacts#ContactPage", {
+  loading: () => <div>Loading...</div>,
+  error: (error) => <div>Error: {error.message}</div>
+})
+```
+
+**3. Durante Build (Vite Plugin):**
 - O plugin lê o arquivo `./features/contacts`
 - Extrai o decorator `@Route` do componente `ContactPage`
+- Extrai as funções `loading` e `error` (se fornecidas)
 - Transforma o código
 
-**3. Código Transformado:**
+**4. Código Transformado (Simples):**
 ```typescript
 (() => {
   @Route("/contacts")
   class LazyContactPage extends Component {
+    renderLoading() { return <div>Loading...</div>; }
+    renderError(error: any) { return <div>Error loading component: {error.message}</div>; }
+    render() {
+      return import("./features/contacts").then((m) => (
+        <m.ContactPage />
+      ));
+    }
+  }
+  return LazyContactPage;
+})()
+```
+
+**5. Código Transformado (Com Opções Customizadas):**
+```typescript
+(() => {
+  @Route("/contacts")
+  class LazyContactPage extends Component {
+    renderLoading() { return <div>Loading...</div>; }
+    renderError(error) { return <div>Error: {error.message}</div>; }
     render() {
       return import("./features/contacts").then((m) => (
         <m.ContactPage />

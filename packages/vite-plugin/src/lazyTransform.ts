@@ -14,6 +14,16 @@ interface LazyCallInfo {
   path: string;
   component: string;
   route: string | t.ObjectExpression | null;
+  loadingFn?:
+    | t.ArrowFunctionExpression
+    | t.FunctionExpression
+    | t.ObjectMethod
+    | null;
+  errorFn?:
+    | t.ArrowFunctionExpression
+    | t.FunctionExpression
+    | t.ObjectMethod
+    | null;
 }
 
 /**
@@ -192,10 +202,51 @@ function generateLazyComponent(info: LazyCallInfo): string {
     }
   }
 
+  // Generate renderLoading method
+  let renderLoadingMethod = "renderLoading() { return <div>Loading...</div>; }";
+  if (info.loadingFn) {
+    const body = info.loadingFn.body;
+    let bodyCode: string;
+
+    // Check if body is a BlockStatement (has {}) or an expression
+    if (t.isBlockStatement(body)) {
+      bodyCode = generate(body).code;
+    } else {
+      // Arrow function without braces: () => <div/>
+      bodyCode = `{ return ${generate(body).code}; }`;
+    }
+
+    renderLoadingMethod = `renderLoading() ${bodyCode}`;
+  }
+
+  // Generate renderError method
+  let renderErrorMethod =
+    "renderError(error: any) { return <div>Error loading component: {error.message}</div>; }";
+  if (info.errorFn) {
+    const errorParams = info.errorFn.params
+      .map((param: any) => generate(param).code)
+      .join(", ");
+
+    const body = info.errorFn.body;
+    let bodyCode: string;
+
+    // Check if body is a BlockStatement (has {}) or an expression
+    if (t.isBlockStatement(body)) {
+      bodyCode = generate(body).code;
+    } else {
+      // Arrow function without braces: (error) => <div/>
+      bodyCode = `{ return ${generate(body).code}; }`;
+    }
+
+    renderErrorMethod = `renderError(${errorParams}) ${bodyCode}`;
+  }
+
   return `(() => {
   ${routeDecorator}
   class ${className} extends Component {
     loadedComponent: any = null;
+    ${renderLoadingMethod}
+    ${renderErrorMethod}
     render() {
       if (this.loadedComponent) {
         return <this.loadedComponent />;
@@ -272,8 +323,8 @@ export function lazyTransformPlugin(): Plugin {
             ) {
               const args = path.node.arguments;
 
-              // Ensure single string argument
-              if (args.length !== 1 || !t.isStringLiteral(args[0])) {
+              // First argument must be a string
+              if (args.length < 1 || !t.isStringLiteral(args[0])) {
                 return;
               }
 
@@ -285,6 +336,49 @@ export function lazyTransformPlugin(): Plugin {
                   `Invalid Lazy syntax: ${lazyArg}. Expected format: "path#Component"`
                 );
                 return;
+              }
+
+              // Extract options if present (second argument)
+              let loadingFn:
+                | t.ArrowFunctionExpression
+                | t.FunctionExpression
+                | null = null;
+              let errorFn:
+                | t.ArrowFunctionExpression
+                | t.FunctionExpression
+                | null = null;
+
+              if (args.length >= 2 && t.isObjectExpression(args[1])) {
+                const optionsObj = args[1];
+
+                for (const prop of optionsObj.properties) {
+                  // Handle ObjectProperty: loading: () => {}
+                  if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
+                    if (prop.key.name === "loading") {
+                      if (
+                        t.isArrowFunctionExpression(prop.value) ||
+                        t.isFunctionExpression(prop.value)
+                      ) {
+                        loadingFn = prop.value as any;
+                      }
+                    } else if (prop.key.name === "error") {
+                      if (
+                        t.isArrowFunctionExpression(prop.value) ||
+                        t.isFunctionExpression(prop.value)
+                      ) {
+                        errorFn = prop.value as any;
+                      }
+                    }
+                  }
+                  // Handle ObjectMethod: loading() {}
+                  else if (t.isObjectMethod(prop) && t.isIdentifier(prop.key)) {
+                    if (prop.key.name === "loading") {
+                      loadingFn = prop as any;
+                    } else if (prop.key.name === "error") {
+                      errorFn = prop as any;
+                    }
+                  }
+                }
               }
 
               // Resolve the actual file path
@@ -313,6 +407,8 @@ export function lazyTransformPlugin(): Plugin {
               const info: LazyCallInfo = {
                 ...parsed,
                 route,
+                loadingFn,
+                errorFn,
               };
 
               // Mark that we need Route import if there's a route
