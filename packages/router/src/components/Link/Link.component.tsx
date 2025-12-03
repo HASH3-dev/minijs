@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { Component, Inject } from "@mini/core";
 import { takeUntil } from "rxjs";
 import { RouterService } from "../../RouterService";
@@ -17,13 +18,19 @@ export class Link extends Component<LinkProps> {
           evt.preventDefault();
           if (!href) return;
           if (typeof href === "string") {
-            this.router.push(href);
+            this.router.push(
+              (import.meta.env.BASE_URL + href).replace(/\/\//, "/")
+            );
             return;
           }
 
           href
             .pipe(takeUntil(this.$.unmount$))
-            .subscribe((hrefVal) => this.router.push(hrefVal));
+            .subscribe((hrefVal) =>
+              this.router.push(
+                (import.meta.env.BASE_URL + hrefVal).replace(/\/\//, "/")
+              )
+            );
         }}
       >
         {this.children}

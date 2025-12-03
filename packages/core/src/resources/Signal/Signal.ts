@@ -177,7 +177,14 @@ export class Signal<
 
     this.pipe(
       map((e) => iterable(e).map(fn as any)),
-      mergeMap((e) => Promise.all(e))
+      mergeMap((e) => Promise.all(e)),
+      map((e) => {
+        // If the original value was not an array, return the first element
+        if (!Array.isArray(this._value)) {
+          return e[0] as any;
+        }
+        return e as any;
+      })
     ).subscribe(s as any);
 
     return s;
