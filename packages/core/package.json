@@ -23,18 +23,17 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --dts --format esm,cjs --sourcemap && npm run build:jsx-runtime",
-    "build:jsx-runtime": "node -e \"require('fs').writeFileSync('dist/jsx-runtime.js', 'export * from \\\"./index.js\\\";\\n'); require('fs').writeFileSync('dist/jsx-runtime.cjs', 'module.exports = require(\\\"./index.cjs\\\");\\n'); require('fs').writeFileSync('dist/jsx-runtime.d.ts', 'export * from \\\"./index.js\\\";\\n');\"",
+    "build": "tsup src/index.ts src/jsx-runtime.ts --dts --format esm,cjs --sourcemap",
     "test": "vitest run"
   },
   "dependencies": {
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "reflect-metadata": "~0.2.2",
+    "rxjs": "~7.8.2"
   },
   "devDependencies": {
-    "@types/node": "^22.7.4",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.9"
+    "@types/node": "~22.7.4",
+    "tsup": "~8.5.1",
+    "typescript": "~5.9.3",
+    "vitest": "~4.0.9"
   }
 }

@@ -23,16 +23,16 @@
     "create-app"
   ],
   "dependencies": {
-    "@clack/prompts": "^0.11.0",
-    "commander": "^14.0.2",
-    "execa": "^9.6.0",
-    "fs-extra": "^11.3.2",
-    "picocolors": "^1.1.1"
+    "@clack/prompts": "~0.11.0",
+    "commander": "~14.0.2",
+    "execa": "~9.6.0",
+    "fs-extra": "~11.3.2",
+    "picocolors": "~1.1.1"
   },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.7.4",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "@types/fs-extra": "~11.0.4",
+    "@types/node": "~22.7.4",
+    "tsup": "~8.5.1",
+    "typescript": "~5.9.3"
   }
 }
