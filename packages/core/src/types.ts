@@ -101,10 +101,10 @@ export type MiniElement<T extends Element> = SignalProperties<
     children?: any;
     slot?: string;
     className?: string;
-    ref?: (el: T) => void;
   } & Partial<ReplaceEventHandlers<T, "on">> &
     Record<string, any>
 > & {
+  ref?: ((el: T) => void) | Signal<T>;
   style?:
     | Signal<Partial<CSSStyleDeclaration>>
     | Observable<Partial<CSSStyleDeclaration>>

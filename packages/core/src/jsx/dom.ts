@@ -8,6 +8,7 @@ import {
   COMPONENT_INSTANCE,
 } from "../constants";
 import { toObservable } from "../helpers";
+import { Signal } from "../resources/Signal";
 
 /**
  * SVG attributes that need special handling (case-sensitive)
@@ -88,8 +89,12 @@ export const applyProps = (
       continue;
     }
     // Handle ref prop - call the function with the element
-    if (k === "ref" && typeof v === "function") {
-      v(el);
+    if (k === "ref") {
+      if (v instanceof Signal) {
+        v.set(el);
+      } else if (typeof v === "function") {
+        v(el);
+      }
       continue;
     }
     if (k.startsWith("on") && typeof v === "function") {
@@ -98,10 +103,37 @@ export const applyProps = (
     }
 
     if (k === "style") {
-      for (const [sk, sv] of Object.entries(v as object)) {
-        el.style[sk as any] = sv as any;
+      if (!isObservable(v)) {
+        for (const [sk, sv] of Object.entries(v as object)) {
+          if (isObservable(sv)) {
+            const observable = componentInstance
+              ? (v as Observable<any>).pipe(
+                  takeUntil(componentInstance.$.unmount$)
+                )
+              : (v as Observable<any>);
+            const s = observable.subscribe(
+              (val) => (el.style[sk as any] = sv as any)
+            );
+            (s as any).label = componentInstance?.constructor.name;
+            subs.push(s);
+          } else {
+            el.style[sk as any] = sv as any;
+          }
+        }
+        continue;
+      } else {
+        const observable = componentInstance
+          ? (v as Observable<any>).pipe(takeUntil(componentInstance.$.unmount$))
+          : (v as Observable<any>);
+        const s = observable.subscribe((val) =>
+          Object.entries(val as object).forEach(
+            ([sk, sv]) => (el.style[sk as any] = sv as any)
+          )
+        );
+        (s as any).label = componentInstance?.constructor.name;
+        subs.push(s);
+        continue;
       }
-      continue;
     }
 
     // Handle reactive attributes

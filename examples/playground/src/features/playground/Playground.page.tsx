@@ -3,12 +3,22 @@ import {
   Inject,
   logComponentHierarchy,
   Mount,
+  Signal,
   signal,
   unwrap,
   UseProviders,
 } from "@mini/core";
 import { Route, RouterService } from "@mini/router";
-import { interval, map, mergeMap, tap } from "rxjs";
+import {
+  fromEvent,
+  interval,
+  map,
+  mergeMap,
+  Observable,
+  switchMap,
+  takeUntil,
+  tap,
+} from "rxjs";
 import { UserRepository } from "../../repositories/user";
 import {
   AlertService,
@@ -42,6 +52,7 @@ export class Playground extends Component {
   private list = signal([1, 2, 3]);
   private teste = signal<number[]>([]);
   private unsigned = signal<string>();
+  private draggableRef = signal<HTMLDivElement>();
 
   @Inject(RouterService) router!: RouterService;
 
@@ -93,6 +104,37 @@ export class Playground extends Component {
 
   addItem() {
     this.list.set((prev) => [...prev, prev.length + 1]);
+  }
+
+  dragElement<T extends HTMLElement>(ref: Signal<T>) {
+    return ref.pipe(
+      switchMap((el) =>
+        fromEvent(el, "mousedown").pipe(
+          switchMap((startEvent: any) => {
+            startEvent.preventDefault();
+            const scrollTop =
+              window.scrollY || document.documentElement.scrollTop;
+            const startX = startEvent.clientX;
+            const startY = startEvent.clientY;
+            const startYWithScroll = startY - scrollTop;
+            const rect = el.getBoundingClientRect();
+            const offsetX = startX - rect.left;
+            const offsetY = startYWithScroll - rect.top;
+
+            return fromEvent(document, "mousemove").pipe(
+              takeUntil(fromEvent(document, "mouseup")),
+              map((moveEvent: any) => {
+                moveEvent.preventDefault();
+                return {
+                  left: `${moveEvent.clientX - offsetX}px`,
+                  top: `${moveEvent.clientY - offsetY}px`,
+                };
+              })
+            );
+          })
+        )
+      )
+    );
   }
 
   render() {
@@ -264,7 +306,7 @@ export class Playground extends Component {
           {/* Navigation Links */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Link to Product Gallery */}
-            <div className="p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl text-center">
+            <div className="p-6 bg-linear-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl text-center">
               <h2 className="text-3xl font-bold text-white mb-3">
                 🎨 Product Gallery
               </h2>
@@ -280,7 +322,7 @@ export class Playground extends Component {
             </div>
 
             {/* Link to Contact Page */}
-            <div className="p-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl shadow-xl text-center">
+            <div className="p-6 bg-linear-to-r from-blue-500 to-indigo-500 rounded-2xl shadow-xl text-center">
               <h2 className="text-3xl font-bold text-white mb-3">
                 📧 Contact Us
               </h2>
@@ -295,6 +337,15 @@ export class Playground extends Component {
               </button>
             </div>
           </div>
+        </div>
+        <div
+          ref={this.draggableRef}
+          className={
+            "bg-blue-500 rounded-2xl shadow-2xl size-32 absolute bottom-5 right-5 flex items-center justify-center"
+          }
+          style={this.dragElement(this.draggableRef)}
+        >
+          Drag Me!
         </div>
       </div>
     );
