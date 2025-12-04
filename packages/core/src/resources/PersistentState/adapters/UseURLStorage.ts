@@ -1,13 +1,19 @@
-import { fromEvent, skip, takeUntil } from "rxjs";
+import { debounceTime, fromEvent, skip, takeUntil } from "rxjs";
 import { Component } from "../../../base/Component";
+import { SERVICE_COMPONENT } from "../../../constants";
 import { Signal } from "../../Signal";
 import { PERSISTENT_STATE_ORIGINAL_SIGNAL } from "../constants";
-import { AbstractStorage } from "./AbstractStorage";
+import {
+  AbstractStorage,
+  ServiceClass,
+  ServiceInstance,
+} from "./AbstractStorage";
 
 interface URLStorageConfig {
   transformer?: {
     serialize: (propertyName: string, data: any) => any;
     deserialize: (propertyName: string, data: any) => any;
+    keys: (propertyName: string, data: any) => string[];
   };
 }
 
@@ -26,31 +32,53 @@ export class UseURLStorage extends AbstractStorage {
     super();
   }
 
-  link(property: string | symbol, instance: Component): void {
+  link(
+    property: string | symbol,
+    instance: Component | ServiceClass<ServiceInstance>
+  ): void {
     this.orinalSignal = (instance as any)[PERSISTENT_STATE_ORIGINAL_SIGNAL];
-    this.componentInstance = instance;
+    this.componentInstance =
+      instance instanceof Component
+        ? instance
+        : (instance as any)[SERVICE_COMPONENT];
     this.propertyName = property;
   }
+
   sync(): void {
     const queryObject = this.parseQueryString();
 
-    const queryIsEmpty = (q: any) => !q || Object.keys(q).length === 0;
+    const queryIsEmpty = (q: any) =>
+      !q ||
+      this.config
+        .transformer!.keys(this.propertyName.toString(), q)
+        .map((k) => q[k])
+        .filter(Boolean).length === 0;
 
-    const defaultValue = (q: any) =>
-      queryIsEmpty(q)
+    const defaultValue = (q: any) => {
+      return queryIsEmpty(q)
         ? this.orinalSignal.value
         : this.config.transformer!.deserialize(this.propertyName as string, q);
+    };
+
     this.signal = new Signal(defaultValue(queryObject));
 
     let isPopingState = false;
 
     this.signal
-      .pipe(takeUntil(this.componentInstance.$.unmount$), skip(1))
+      .pipe(
+        takeUntil(this.componentInstance.$.unmount$),
+        skip(1),
+        debounceTime(100)
+      )
       .subscribe((data) => {
         const url = new URL(window.location.href);
-        url.search = new URLSearchParams(
-          this.config.transformer!.serialize(this.propertyName as string, data)
-        ).toString();
+        url.search = new URLSearchParams({
+          ...Object.fromEntries(url.searchParams.entries()),
+          ...this.config.transformer!.serialize(
+            this.propertyName as string,
+            data
+          ),
+        }).toString();
 
         if (!isPopingState) {
           window.history.pushState({}, "", url);
@@ -97,7 +125,8 @@ export class URLTransformers {
         [propertyName]: JSON.stringify(data),
       }),
       deserialize: (propertyName: string, data: any) =>
-        JSON.parse(data[propertyName]),
+        JSON.parse(data[propertyName] ?? "null"),
+      keys: (propertyName: string, data: any) => [propertyName],
     };
   }
 
@@ -109,6 +138,7 @@ export class URLTransformers {
     return {
       serialize: (propertyName: string, data: any) => data,
       deserialize: (propertyName: string, data: any) => data,
+      keys: (propertyName: string, data: any) => Object.keys(data),
     };
   }
 
@@ -125,6 +155,7 @@ export class URLTransformers {
           .flat()
           .map((item: string) => JSON.parse(item));
       },
+      keys: (propertyName: string, data: any) => [propertyName],
     };
   }
 }
