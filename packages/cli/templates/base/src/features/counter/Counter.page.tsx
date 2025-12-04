@@ -2,7 +2,7 @@ import { Component, signal } from "@mini/core";
 import { Route } from "@mini/router";
 
 @Route("/")
-export class Counter extends Component {
+export class CounterPage extends Component {
   private count = signal(0);
 
   increment() {

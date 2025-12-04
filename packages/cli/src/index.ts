@@ -15,6 +15,7 @@ interface ProjectConfig {
   includeRouter: boolean;
   includeTailwind: boolean;
   includeMCP: boolean;
+  complexExample: boolean;
   packageManager: "npm" | "yarn" | "pnpm";
 }
 
@@ -68,6 +69,12 @@ async function createProject(targetDir: string, config: ProjectConfig) {
 
       const mcpConfigPath = path.join(targetDir, "mcp-config.json");
       await fs.writeJson(mcpConfigPath, mcpConfig, { spaces: 2 });
+    }
+
+    if (config.complexExample) {
+      // Copy complex example files
+      const complexTemplate = path.join(__dirname, "../templates/complex");
+      await fs.copy(complexTemplate, targetDir, { overwrite: true });
     }
 
     await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
@@ -133,6 +140,11 @@ async function main() {
       includeMCP: () =>
         p.confirm({
           message: "Include MCP Server for AI assistance?",
+          initialValue: false,
+        }),
+      complexExample: () =>
+        p.confirm({
+          message: "Include complex example features?",
           initialValue: false,
         }),
       packageManager: () =>

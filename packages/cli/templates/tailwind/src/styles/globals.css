@@ -1,5 +1,7 @@
+@import "tailwindcss";
+
 /* Custom styles */
-:root {
+@theme {
   --color-slate-50: #f8fafc;
   --color-slate-100: #f1f5f9;
 }
