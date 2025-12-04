@@ -251,7 +251,17 @@ export class Signal<
    */
   filter<J = UnwrapIterable<R>>(fn: (value: J) => boolean): Signal<R> {
     const s = new Signal<R>();
-    this.pipe(map((e) => iterable(e).filter(fn as any))).subscribe(s as any);
+    this.pipe(
+      map((e) => iterable(e).filter(fn as any)),
+      mergeMap((e) => Promise.all(e)),
+      map((e) => {
+        // If the original value was not an array, return the first element
+        if (!Array.isArray(this._value)) {
+          return e[0] as any;
+        }
+        return e as any;
+      })
+    ).subscribe(s as any);
 
     return s;
   }
