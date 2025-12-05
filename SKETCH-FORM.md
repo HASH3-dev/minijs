@@ -1,4 +1,4 @@
-```typescript
+```tsx
 import { Component, signal } from '@mini/core';
 import { Form, FormController, FormField, FieldError, FormTrigger, InputMask } from '@mini/forms';
 import {
@@ -17,26 +17,34 @@ class SignupFormSchema {
   @MinLength(1)
   @MaxLength(255)
   @Transform(({ val }) => val.trim())
+  @ValidateOn(FormTrigger.input)
+  @InputLabel('Name')
   name = ''; // default
 
   @IsString()
   @IsEmail()
   @Transform(({ val }) => val.trim())
+  @InputLabel('Email')
   email = '';
 
   @IsCPF()
   @Transform(({ val }) => val.trim())
   @InputMask('999.999.999-99') // mascaras de inputs via decorator
+  @InputLabel('CPF')
   cpf = '';
 
   @IsString()
   @MinLength(8)
   @MaxLength(255)
   @Matches('regex here')
+  @InputType('password')
+  @InputLabel('Password')
   password = '';
 
   @IsString()
   @FieldsMatch('password', { message: "Passwords doesn't match" }) //custom validator
+  @InputType('password')
+  @InputLabel('Confirm Password')
   confirmPassword = '';
 }
 
@@ -44,11 +52,12 @@ export class SignupForm extends Component {
   form = new FormController(SignupFormSchema, {
     trigger: FormTrigger.blur, // onBlur | onInput | onSubmit
   });
+
   enabledSubmit = combineLatest(
       [
-        this.form.isValid$,
-        this.form.isDirty$,
-        this.form.isTouched$,
+        this.form.requiredFields.isValid$,
+        this.form.requiredFields.isDirty$,
+        this.form.requiredFields.isTouched$,
       ],
       ([isValid, isDirty, isTouched]) => isValid && isDirty && isTouched
     )
@@ -66,7 +75,7 @@ export class SignupForm extends Component {
     console.log(this.form.fields$ /* signal de todos os campos do form com informação individual de cada campo
     touched, dirty, valid, error */);
     console.log(this.form.requiredFields /* retorna um subset do form com somente os requiredFields, mas ainda é uma instancia de FormController */);
-    console.log(this.form.get('email')) // retorna signal do campo específico);
+    console.log(this.form.values$.get('email')) // retorna signal do campo específico);
 
     return this.api.send(await this.form.values$);
   }
@@ -88,67 +97,46 @@ export class SignupForm extends Component {
 
   render() {
     return (
-      <Form
-        form={this.form}
-        onSubmit={this.handleSubmit}
+      <form
+        {...this.form.bind()}
+        onSubmit={() => this.handleSubmit()}
       >
-        <FormField control='name' trigger={FormTrigger.input}> {/* specific trigger */}
-          {props => (
-            <div>
-              <label for='name'>Name</label>
-              <input
-                {...props}
-              />
-              <FieldError error={props.error} />
-            </div>
-          )}
-        </FormField>
+        <div>
+          <label for='name'>Name</label>
+          <input {...this.form.bind('name', { validateOn: FormTrigger.input })} />
+          {this.form.fields$.get('name.errors$').map(error => <p>{error}</p>)}
+        </div>
 
-        <FormField control='email'>
-          {props => (
-            <div>
-              <label for='email'>Email</label>
-              <input {...props} />
-              <FieldError error={props.error} />
-            </div>
-          )}
-        </FormField>
+        <div>
+          <label for='email'>Email</label>
+          <input {...this.form.bind('email')} />
+          {this.form.fields$.get('email.errors$').map(error => <p>{error}</p>)}
+        </div>
 
-        <FormField control='cpf'>
-          {props => (
-            <div>
-              <label for='cpf'>CPF</label>
-              <input {...props} />
-              <FieldError error={props.error} />
-            </div>
-          )}
-        </FormField>
+        <div>
+          <label for='cpf'>CPF</label>
+          <input {...this.form.bind('cpf')} />
+          {this.form.fields$.get('cpf.errors$').map(error => <p>{error}</p>)}
+        </div>
 
-        <FormField control='password'>
-          {props => (
-            <div>
-              <label for='password'>Password</label>
-              <input
-                type='password'
-                {...props}
-              />
-              <FieldError error={props.error} />
-            </div>
-          )}
-        </FormField>
+        <div>
+          <label for='password'>Password</label>
+          <input
+            type='password'
+            {...this.form.bind('password')}
+          />
+          {this.form.fields$.get('password.errors$').map(error => <p>{error}</p>)}
+        </div>
 
-        <FormField control='confirmPassword'>
-          {props => (
-            <div>
-              <label for='confirmPassword'>Confirm Password</label>
-              <input
-                type='password'
-                {...props}
-              />
-              <FieldError error={props.error} />
-            </div>
-          )}
-        </FormField>
+
+        <div>
+          <label for='confirmPassword'>Confirm Password</label>
+          <input
+            type='password'
+            {...this.form.bind('confirmPassword')}
+          />
+          {this.form.fields$.get('confirmPassword.errors$').map(error => <p>{error}</p>)}
+        </div>
 
         <button
           type='submit'
@@ -157,8 +145,41 @@ export class SignupForm extends Component {
           <Loader fragment='submitting' />
         </button>
         {this.form.errors$.map(error => <p>{error}</p>)}
-      </Form>
+      </form>
     );
+  }
+
+
+  // OR
+  render() {
+    return (
+      <form
+        {...this.form.bind()}
+        onSubmit={this.handleSubmit}
+      >
+        {this.form.fields$.map(([fieldName, field]) => (
+          <div key={fieldName}>
+            <label for={fieldName}>{field.label}</label>
+            <input {...field.bind()} />
+            {field.errors$.map(error => <p>{error}</p>)}
+          </div>
+        ))}
+        <button
+          type='submit'
+          disabled={this.enabledSubmit}
+        >
+          <Loader fragment='submitting' />
+        </button>
+        {this.form.errors$.map(error => <p>{error}</p>)}
+      </form>
+    );
+  }
+
+  // OR for debug purposes
+  render() {
+    return (
+      <AutoForm form={this.form} submit={this.handleSubmit} />
+    )
   }
 }
 ```
