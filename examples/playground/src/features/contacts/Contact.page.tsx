@@ -1,18 +1,98 @@
-import { Component, Mount } from "@mini/core";
+import { Component, Mount, signal, Watch } from "@mini/core";
+import {
+  AutoForm,
+  FormController,
+  InputIsOptional,
+  InputLabel,
+  InputMask,
+  InputType,
+  UseForm,
+} from "@mini/forms";
 import { Route } from "@mini/router";
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsPhoneNumber,
+  IsString,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 import { ContactFormComponent, ContactInfoCard } from "./components";
+import { takeUntil } from "rxjs";
+
+export class ContactFormSchema {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  @InputLabel("Name")
+  @InputType("text")
+  name = "";
+
+  @IsEmail()
+  @IsNotEmpty()
+  @InputLabel("Email")
+  @InputType("email")
+  email = "";
+
+  @IsString()
+  @IsPhoneNumber("US")
+  @InputLabel("Phone")
+  @InputType("tel")
+  @InputMask("(00) 00000-0000")
+  phone = "";
+
+  @IsString()
+  @MaxLength(20)
+  @InputLabel("Message")
+  @InputType("textarea")
+  @InputIsOptional()
+  message = "";
+}
 
 @Route("/contacts")
 export class ContactPage extends Component {
+  @UseForm(ContactFormSchema)
+  private readonly form!: FormController<ContactFormSchema>;
+  private teste = signal<number>();
+  private teste2 = signal<string>();
+
+  constructor() {
+    super();
+    const subscription = this.teste2.subscribe({
+      next: (value) => console.log("NEXT", value),
+      complete: () => console.log("COMPLETE"),
+    });
+
+    this.teste2.finally(() => console.log("finally"));
+    this.teste2.set("");
+    setTimeout(() => {
+      subscription.unsubscribe();
+    });
+  }
+
   @Mount()
   onMount() {
-    console.log("Contact Page mounted!");
+    console.log(this.form);
+    this.form.requiredFields.values$
+      .pipe(takeUntil(this.$.unmount$))
+      .subscribe((values) => {
+        // console.log(values);
+      });
+
+    return () => {
+      console.log("unmount");
+    };
+  }
+
+  @Watch("form.requiredFields.values$")
+  onFormChange(values: ContactFormSchema) {
+    console.log(this.form.values$.value);
   }
 
   render() {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold text-gray-900 mb-4">
@@ -23,7 +103,25 @@ export class ContactPage extends Component {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div
+              className="bg-white rounded-2xl shadow-xl p-8
+            [&_label]:text-sm [&_label]:font-medium [&_label]:text-gray-700 [&_label]:block [&_label]:mb-2
+            [&_input]:w-full [&_input]:px-4 [&_input]:py-3 [&_input]:border [&_input]:border-gray-300 [&_input]:rounded-lg [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:focus:border-transparent [&_input]:transition
+            [&_textarea]:w-full [&_textarea]:px-4 [&_textarea]:py-3 [&_textarea]:border [&_textarea]:border-gray-300 [&_textarea]:rounded-lg [&_textarea]:focus:outline-none [&_textarea]:focus:ring-2 [&_textarea]:focus:ring-blue-500 [&_textarea]:focus:border-transparent [&_textarea]:transition [&_textarea]:resize-none"
+            >
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                Formulário com AutoForm
+              </h2>
+              <AutoForm
+                form={this.form}
+                submit={async (e) => {
+                  e.preventDefault();
+                  console.log("Submit", await this.form.values$);
+                }}
+              />
+            </div>
+
             {/* Contact Form */}
             <ContactFormComponent />
 

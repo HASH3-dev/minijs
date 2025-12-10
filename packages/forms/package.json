@@ -1,0 +1,44 @@
+{
+  "name": "@mini/forms",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format esm --sourcemap",
+    "dev": "tsup src/index.ts --dts --format esm --sourcemap --watch"
+  },
+  "dependencies": {
+    "@mini/core": "*",
+    "rxjs": "~7.8.2",
+    "reflect-metadata": "^0.2.2",
+    "imask": "^7.6.1"
+  },
+  "peerDependencies": {
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.0"
+  },
+  "peerDependenciesMeta": {
+    "class-validator": {
+      "optional": true
+    },
+    "class-transformer": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "tsup": "~8.5.1",
+    "typescript": "~5.9.3",
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1"
+  }
+}
