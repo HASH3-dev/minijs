@@ -1,4 +1,4 @@
-import { Observable, Subscription } from "rxjs";
+import { Observable, Subject, Subscription } from "rxjs";
 import { mergeMap, takeUntil } from "rxjs/operators";
 import { Component } from "./base/Component";
 import {
@@ -8,6 +8,7 @@ import {
   DOM_CACHE,
   LIFECYCLE_EXECUTED,
   MUTATION_OBSERVER,
+  OBSERVABLES,
   PARENT_COMPONENT,
   SUBSCRIPTIONS,
 } from "./constants";
@@ -397,12 +398,14 @@ export class Application {
       [MUTATION_OBSERVER]: (currentNode as any)?.[MUTATION_OBSERVER],
       [COMPONENT_INSTANCE]: (currentNode as any)?.[COMPONENT_INSTANCE],
       [SUBSCRIPTIONS]: (currentNode as any)?.[SUBSCRIPTIONS],
+      [OBSERVABLES]: (currentNode as any)?.[OBSERVABLES],
     });
 
     Object.assign(currentNode, {
       [MUTATION_OBSERVER]: null,
       [COMPONENT_INSTANCE]: null,
       [SUBSCRIPTIONS]: null,
+      [OBSERVABLES]: null,
     });
   }
 
@@ -611,9 +614,12 @@ export class Application {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.removedNodes.forEach((removed) => {
-          (removed as any)[SUBSCRIPTIONS]?.forEach((sub: Subscription) =>
-            sub.unsubscribe()
-          );
+          (removed as any)[SUBSCRIPTIONS]?.forEach((sub: Subscription) => {
+            sub.unsubscribe();
+          });
+          (removed as any)[OBSERVABLES]?.forEach((observable: Subject<any>) => {
+            observable.complete();
+          });
           if (removed === node) {
             observer.disconnect();
             (node as any)[COMPONENT_INSTANCE]?.destroy();

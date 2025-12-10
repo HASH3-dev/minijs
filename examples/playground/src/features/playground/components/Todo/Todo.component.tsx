@@ -19,12 +19,10 @@ type TodoItem = {
 export class Todo extends Component {
   @Inject(AlertService) alertService!: AlertService;
 
+  @PersistentSate(new UseURLStorage())
   private text = signal("");
-  @PersistentSate(
-    new UseURLStorage({
-      transformer: URLTransformers.propertyAsKeyArrayValuesAsJSON(),
-    })
-  )
+
+  @PersistentSate(new UseURLStorage())
   list = signal<TodoItem[]>([]);
 
   async addItem() {
@@ -93,6 +91,12 @@ export class Todo extends Component {
         </div>
 
         <ul className="flex flex-col gap-2 max-w-80 w-full">
+          <p>
+            {this.list
+              .length()
+              .map((e) => e > 0 && `${e} items`)
+              .orElse(() => "No items")}
+          </p>
           {this.list
             .map((item) => (
               <li className="flex bg-slate-100 items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 w-full">

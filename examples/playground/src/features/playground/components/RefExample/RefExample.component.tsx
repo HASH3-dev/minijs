@@ -5,17 +5,6 @@ export class RefExample extends Component {
   private divRef: HTMLDivElement | null = null;
   private message = signal("");
 
-  @Mount()
-  onMount() {
-    console.log("Input element:", this.inputRef);
-    console.log("Div element:", this.divRef);
-
-    // Auto focus no input quando o componente monta
-    if (this.inputRef) {
-      this.inputRef.focus();
-    }
-  }
-
   focusInput() {
     this.inputRef?.focus();
   }

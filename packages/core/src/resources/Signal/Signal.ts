@@ -1,13 +1,18 @@
 import {
   distinct,
+  EMPTY,
+  filter,
   from,
   map,
   mergeMap,
   Observable,
+  of,
   ReplaySubject,
-  take,
+  startWith,
+  switchMap,
 } from "rxjs";
 import { DeepRequired } from "../../types";
+import { isIterable } from "../../utils/isIterable";
 import { iterable } from "../../utils/iterable";
 import type {
   DeepPathType,
@@ -125,10 +130,13 @@ export class Signal<
       DeepPropertyType<DeepRequired<R>, K extends string ? K : string>
     >();
 
-    this.pipe(
+    const sub = this.pipe(
       map((val) => path.reduce((acc, key) => ((acc as any) ?? {})?.[key], val)),
       distinct((e) => JSON.stringify(e))
     ).subscribe(s as any);
+
+    s.finally(() => sub.unsubscribe());
+
     return s;
   }
 
@@ -149,6 +157,24 @@ export class Signal<
     } else {
       this.next(value);
     }
+  }
+
+  length(): Signal<number> {
+    const s = new Signal<number>();
+
+    const sub = this.pipe(
+      map((e) => {
+        if (Array.isArray(e)) {
+          return e.length;
+        }
+
+        throw new Error("Signal is not an array");
+      })
+    ).subscribe(s);
+
+    s.finally(() => sub.unsubscribe());
+
+    return s;
   }
 
   /**
@@ -175,17 +201,21 @@ export class Signal<
   map<U, J = UnwrapIterable<R>>(fn: (value: J, index: number) => U): Signal<U> {
     const s = new Signal<U>();
 
-    this.pipe(
+    const sub = this.pipe(
       map((e) => iterable(e).map(fn as any)),
       mergeMap((e) => Promise.all(e)),
       map((e) => {
         // If the original value was not an array, return the first element
-        if (!Array.isArray(this._value)) {
+        if (!(isIterable(this._value) && typeof this._value !== "string")) {
           return e[0] as any;
         }
         return e as any;
       })
     ).subscribe(s as any);
+
+    s.finally(() => {
+      sub.unsubscribe();
+    });
 
     return s;
   }
@@ -220,9 +250,12 @@ export class Signal<
     initialValue: U
   ): Signal<U> {
     const s = new Signal<U>();
-    this.pipe(
+
+    const sub = this.pipe(
       map((e) => iterable(e).reduce(fn as any, initialValue))
     ).subscribe(s as any);
+
+    s.finally(() => sub.unsubscribe());
 
     return s;
   }
@@ -251,17 +284,20 @@ export class Signal<
    */
   filter<J = UnwrapIterable<R>>(fn: (value: J) => boolean): Signal<R> {
     const s = new Signal<R>();
-    this.pipe(
+
+    const sub = this.pipe(
       map((e) => iterable(e).filter(fn as any)),
       mergeMap((e) => Promise.all(e)),
       map((e) => {
         // If the original value was not an array, return the first element
-        if (!Array.isArray(this._value)) {
+        if (!(isIterable(this._value) && typeof this._value !== "string")) {
           return e[0] as any;
         }
         return e as any;
       })
     ).subscribe(s as any);
+
+    s.finally(() => sub.unsubscribe());
 
     return s;
   }
@@ -292,7 +328,12 @@ export class Signal<
     fn: (value: J) => boolean
   ): Signal<R | undefined> {
     const s = new Signal<R | undefined>();
-    this.pipe(map((e) => iterable(e).find(fn as any))).subscribe(s as any);
+
+    const sub = this.pipe(map((e) => iterable(e).find(fn as any))).subscribe(
+      s as any
+    );
+
+    s.finally(() => sub.unsubscribe());
 
     return s;
   }
@@ -316,13 +357,25 @@ export class Signal<
     value: () => K,
     checker?: (value: R) => boolean
   ): Signal<R> | Signal<K> {
-    const s = new Signal(value);
+    const s = new Signal<R | K>();
 
-    this.pipe(
+    const NULL = Symbol("NULL");
+    const sub = this.pipe(
+      startWith(NULL),
+      switchMap((e) => {
+        if (e === NULL) {
+          if (!this.isInitialized()) {
+            s.next(value() as UnwrapObservable<K>);
+            return EMPTY;
+          }
+        }
+        return of(e);
+      }),
+      filter((e) => e !== NULL),
       map((e) => {
         return (
           checker
-            ? checker(e)
+            ? checker(e as R)
             : e === undefined ||
               e === null ||
               e === false ||
@@ -333,7 +386,9 @@ export class Signal<
       })
     ).subscribe(s as any);
 
-    return s as any;
+    s.finally(() => sub.unsubscribe());
+
+    return s as Signal<R> | Signal<K>;
   }
 
   /**
@@ -356,7 +411,7 @@ export class Signal<
   then<T>(fn: (value: R) => T): Signal<T> {
     const s = new Signal<T>();
 
-    this.pipe(take(1)).subscribe({
+    this.subscribe({
       next: (val) => s.next(fn(val) as UnwrapObservable<T>),
       error: (err) => s.error(err),
       complete: () => s.complete(),
@@ -386,7 +441,7 @@ export class Signal<
   catch<U>(fn: (value: any) => U): Signal<U> {
     const s = new Signal<U>();
 
-    this.pipe(take(1)).subscribe({
+    this.subscribe({
       next: (val) => s.next(val as UnwrapObservable<U>),
       error: (err) => s.next(fn(err) as UnwrapObservable<U>),
       complete: () => s.complete(),
@@ -408,7 +463,7 @@ export class Signal<
    */
   finally<R>(fn: () => any): Signal<R> {
     const s = new Signal<R>();
-    this.pipe(take(1)).subscribe({
+    this.subscribe({
       next: (val) => s.next(val as UnwrapObservable<R>),
       error: (err) => s.error(err as UnwrapObservable<R>),
       complete: () => {

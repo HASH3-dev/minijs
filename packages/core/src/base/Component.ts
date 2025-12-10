@@ -95,13 +95,17 @@ export abstract class Component<P extends Record<string, any> = {}>
   }
 
   set [CHILDREN_HIERARCHY](value: Component | Array<Component> | undefined) {
-    this.__children_hierarchy = [
-      ...new Set(
-        [...(this.__children_hierarchy ?? []), ...[value].flat()].filter(
-          Boolean
-        ) as Array<Component>
-      ).values(),
-    ];
+    if (Array.isArray(value)) {
+      this.__children_hierarchy = value;
+    } else {
+      this.__children_hierarchy = [
+        ...new Set(
+          [...(this.__children_hierarchy ?? []), ...[value].flat()].filter(
+            Boolean
+          ) as Array<Component>
+        ).values(),
+      ];
+    }
   }
 
   constructor() {

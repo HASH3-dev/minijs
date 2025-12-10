@@ -1,13 +1,10 @@
 import { debounceTime, fromEvent, skip, takeUntil } from "rxjs";
 import { Component } from "../../../base/Component";
 import { SERVICE_COMPONENT } from "../../../constants";
+import { ServiceClass, ServiceInstance } from "../../../types";
 import { Signal } from "../../Signal";
 import { PERSISTENT_STATE_ORIGINAL_SIGNAL } from "../constants";
-import {
-  AbstractStorage,
-  ServiceClass,
-  ServiceInstance,
-} from "./AbstractStorage";
+import { AbstractStorage } from "./AbstractStorage";
 
 interface URLStorageConfig {
   transformer?: {
@@ -148,8 +145,9 @@ export class URLTransformers {
    */
   static propertyAsKeyArrayValuesAsJSON(): URLStorageConfig["transformer"] {
     return {
-      serialize: (propertyName: string, data: any) =>
-        data.map((item: any) => [propertyName, JSON.stringify(item)]),
+      serialize: (propertyName: string, data: any) => ({
+        [propertyName]: data.map((item: any) => JSON.stringify(item)),
+      }),
       deserialize: (propertyName: string, data: any) => {
         return [data[propertyName]]
           .flat()

@@ -47,9 +47,28 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
 
     // Setup each watcher
     for (const config of configs) {
-      const [signalProp, ...paths] = config.propertyName.split(".");
+      const paths = config.propertyName.split(".");
 
-      const observable = (component as any)[signalProp] as Signal;
+      let firstSignalFoundedInPath;
+      let signalProp: any = component;
+      let index = 0;
+      while (!firstSignalFoundedInPath) {
+        signalProp = signalProp[paths[index]];
+        if (signalProp instanceof Signal) {
+          firstSignalFoundedInPath = signalProp;
+          break;
+        }
+        index++;
+      }
+
+      if (!firstSignalFoundedInPath) {
+        console.warn(
+          `[WatchPlugin] Property "${config.propertyName}" not found on component ${component.constructor.name}`
+        );
+        continue;
+      }
+
+      const observable = signalProp as Signal;
 
       if (!observable) {
         console.warn(
@@ -66,8 +85,8 @@ export class WatchDecoratorPlugin extends DecoratorPlugin {
       }
 
       const pipedObservable = (
-        paths?.length > 0
-          ? observable.get(paths.join(".") as never)
+        paths.slice(index + 1)?.length > 0
+          ? observable.get(paths.slice(index + 1).join(".") as never)
           : (observable as any)
       ).pipe(
         ...(config.skipInitialValue

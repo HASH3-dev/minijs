@@ -7,9 +7,10 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run clean && npm run build:core && npm run build:router && npm run build:vite-plugin && npm run build:cli && npm run build:common && npm run build:mcp-server",
+    "build": "npm run clean && npm run build:core && npm run build:router && npm run build:forms && npm run build:vite-plugin && npm run build:cli && npm run build:common && npm run build:mcp-server",
     "build:core": "npm run -w @mini/core build",
     "build:router": "npm run -w @mini/router build",
+    "build:forms": "npm run -w @mini/forms build",
     "build:vite-plugin": "npm run -w @mini/vite-plugin build",
     "build:cli": "npm run -w @mini/cli build",
     "build:common": "npm run -w @mini/common build",

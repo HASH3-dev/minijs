@@ -1,0 +1,1 @@
+export { getFieldsMetadata } from "./getFieldsMetadata";

@@ -1,4 +1,4 @@
-import { isObservable, Observable, Subscription } from "rxjs";
+import { isObservable, Observable, Subject, Subscription } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import { Application } from "../Application";
 import { Component } from "../base/Component";
@@ -6,6 +6,7 @@ import {
   SUBSCRIPTIONS,
   COMPONENT_PLACEHOLDER,
   COMPONENT_INSTANCE,
+  OBSERVABLES,
 } from "../constants";
 import { toObservable } from "../helpers";
 import { Signal } from "../resources/Signal";
@@ -83,6 +84,7 @@ export const applyProps = (
   const componentInstance = parentComponent;
 
   const subs: Subscription[] = [];
+  const observables: Subject<any>[] = [];
   for (const [k, v] of Object.entries(props)) {
     if (k === "children") {
       appendChildren(el, v, componentInstance);
@@ -107,15 +109,16 @@ export const applyProps = (
         for (const [sk, sv] of Object.entries(v as object)) {
           if (isObservable(sv)) {
             const observable = componentInstance
-              ? (v as Observable<any>).pipe(
+              ? (sv as Observable<any>).pipe(
                   takeUntil(componentInstance.$.unmount$)
                 )
-              : (v as Observable<any>);
+              : (sv as Observable<any>);
             const s = observable.subscribe(
-              (val) => (el.style[sk as any] = sv as any)
+              (val) => (el.style[sk as any] = val as any)
             );
             (s as any).label = componentInstance?.constructor.name;
             subs.push(s);
+            observables.push(observable as Subject<any>);
           } else {
             el.style[sk as any] = sv as any;
           }
@@ -132,6 +135,7 @@ export const applyProps = (
         );
         (s as any).label = componentInstance?.constructor.name;
         subs.push(s);
+        observables.push(observable as Subject<any>);
         continue;
       }
     }
@@ -145,11 +149,16 @@ export const applyProps = (
       const s = observable.subscribe((val) => setAttr(el, k, val as any));
       (s as any).label = componentInstance?.constructor.name;
       subs.push(s);
+      observables.push(observable as Subject<any>);
     } else {
       setAttr(el, k, v as any);
     }
   }
-  (el as any)[SUBSCRIPTIONS] = subs;
+  (el as any)[SUBSCRIPTIONS] = [...((el as any)[SUBSCRIPTIONS] ?? []), ...subs];
+  (el as any)[OBSERVABLES] = [
+    ...((el as any)[OBSERVABLES] ?? []),
+    ...observables,
+  ];
 };
 
 /**
@@ -395,5 +404,12 @@ export const appendChildren = (
     currentNodes.push(textNode);
   });
 
-  (startMarker as any)[SUBSCRIPTIONS] = [subscription];
+  (startMarker as any)[SUBSCRIPTIONS] = [
+    ...((startMarker as any)[SUBSCRIPTIONS] ?? []),
+    subscription,
+  ];
+  (startMarker as any)[OBSERVABLES] = [
+    ...((startMarker as any)[OBSERVABLES] ?? []),
+    observable,
+  ];
 };

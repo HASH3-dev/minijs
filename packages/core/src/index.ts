@@ -8,6 +8,7 @@ export {
   COMPONENT_PLACEHOLDER,
   SUBSCRIPTIONS,
   RENDER_STATE,
+  SERVICE_COMPONENT,
 } from "./constants";
 
 // Base Classes (new architecture)
