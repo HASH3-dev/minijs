@@ -1,5 +1,7 @@
+import { Injectable } from "@mini/core";
 import type { ContactForm } from "../../features/contacts/types";
 
+@Injectable()
 export class ContactRepository {
   async submitContact(
     data: ContactForm
