@@ -14,7 +14,7 @@ export class ProductDetailPage extends Component {
   @Mount()
   onMount() {
     // Get product ID from route params
-    this.router.params$.subscribe((params) => {
+    return this.router.params$.subscribe((params) => {
       const productId = parseInt(params.id);
       const product = PRODUCTS[productId];
       if (product) {

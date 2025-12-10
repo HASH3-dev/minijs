@@ -11,7 +11,10 @@
   "dependencies": {
     "@mini/common": "*",
     "@mini/core": "*",
+    "@mini/forms": "*",
     "@mini/router": "*",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
