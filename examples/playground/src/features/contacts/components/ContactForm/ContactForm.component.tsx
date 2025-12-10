@@ -1,4 +1,4 @@
-import { Component, signal } from "@mini/core";
+import { Component, Inject, signal } from "@mini/core";
 import type { ContactForm as ContactFormData } from "../../types";
 import { ContactRepository } from "../../../../repositories/contact";
 
@@ -16,7 +16,9 @@ export class ContactFormComponent extends Component<ContactFormProps> {
 
   private submitted = signal(false);
   private loading = signal(false);
-  private repository = new ContactRepository();
+
+  @Inject(ContactRepository)
+  private repository!: ContactRepository;
 
   handleInputChange(field: keyof ContactFormData, value: string) {
     this.form.set((prev) => ({
