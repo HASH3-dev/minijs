@@ -155,6 +155,11 @@ export abstract class RenderableComponent extends ReactiveComponent {
 
     // Remove from component providers
     if (Application.componentProviders.has(this)) {
+      Application.componentProviders
+        .get(this)
+        .forEach((value: any, key: any) => {
+          (Application.injectables as Map<any, any>).delete(key);
+        });
       Application.componentProviders.delete(this);
     }
   }

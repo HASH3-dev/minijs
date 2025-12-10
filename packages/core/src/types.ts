@@ -5,6 +5,7 @@
 import { Signal } from "./resources/Signal";
 import { Component } from "./base/Component";
 import { Observable } from "rxjs";
+import { SERVICE_COMPONENT } from "./constants";
 
 /**
  * Enum for component render states
@@ -17,6 +18,12 @@ export enum RenderState {
   ERROR = "error",
   EMPTY = "empty",
 }
+
+export interface ServiceInstance {
+  [SERVICE_COMPONENT]: Component;
+}
+
+export type ServiceClass<T extends ServiceInstance> = new (...args: any[]) => T;
 
 export type ChildType =
   | Node
@@ -104,7 +111,7 @@ export type MiniElement<T extends Element> = SignalProperties<
   } & Partial<ReplaceEventHandlers<T, "on">> &
     Record<string, any>
 > & {
-  ref?: ((el: T) => void) | Signal<T>;
+  ref?: ((el: any) => void) | Signal<any>;
   style?:
     | Signal<Partial<CSSStyleDeclaration>>
     | Observable<Partial<CSSStyleDeclaration>>

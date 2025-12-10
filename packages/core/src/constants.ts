@@ -36,3 +36,6 @@ export const SERVICE_COMPONENT = Symbol("__mini_service_component");
 
 /** Symbol for storing subscriptions on DOM nodes */
 export const SUBSCRIPTIONS = Symbol("__mini_subs");
+
+/** Symbol for storing observables on DOM nodes */
+export const OBSERVABLES = Symbol("__mini_observables");
