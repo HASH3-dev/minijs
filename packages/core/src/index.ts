@@ -30,16 +30,7 @@ import "./lifecycle/registerDefaultPlugins"; // Auto-register default plugins
 export { Component, RenderStateValues } from "./base/Component";
 
 // Decorators
-export * from "./resources/Mount";
-export * from "./resources/Watch";
-export * from "./resources/Child";
-export * from "./resources/Guard";
-export * from "./resources/Resolver";
-export * from "./resources/Provider";
-export * from "./resources/LoadData";
-export * from "./resources/Lazy";
-export * from "./resources/PersistentState";
-export * from "./resources/Signal";
+export * from "./resources";
 
 // Helpers
 export * from "./helpers";

@@ -1,10 +1,8 @@
 import { debounceTime, fromEvent, skip, takeUntil } from "rxjs";
-import { Component } from "../../../base/Component";
-import { SERVICE_COMPONENT } from "../../../constants";
-import { ServiceClass, ServiceInstance } from "../../../types";
-import { Signal } from "../../Signal";
 import { PERSISTENT_STATE_ORIGINAL_SIGNAL } from "../constants";
 import { AbstractStorage } from "./AbstractStorage";
+import { Signal, Component, SERVICE_COMPONENT } from "@mini/core";
+import type { ServiceClass, ServiceInstance } from "@mini/core";
 
 interface URLStorageConfig {
   transformer?: {
