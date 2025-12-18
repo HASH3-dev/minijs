@@ -1,4 +1,4 @@
-import { Component, Mount, signal, Watch } from "@mini/core";
+import { Component, Mount, signal, UseProviders, Watch } from "@mini/core";
 import {
   AutoForm,
   FormController,
@@ -19,6 +19,7 @@ import {
 } from "class-validator";
 import { ContactFormComponent, ContactInfoCard } from "./components";
 import { takeUntil } from "rxjs";
+import { ContactRepository } from "../../repositories/contact";
 
 export class ContactFormSchema {
   @IsString()
@@ -50,6 +51,7 @@ export class ContactFormSchema {
 }
 
 @Route("/contacts")
+@UseProviders([ContactRepository])
 export class ContactPage extends Component {
   @UseForm(ContactFormSchema)
   private readonly form!: FormController<ContactFormSchema>;

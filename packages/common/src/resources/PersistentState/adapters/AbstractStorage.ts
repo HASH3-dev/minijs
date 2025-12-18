@@ -1,6 +1,5 @@
-import { Component } from "../../../base/Component";
-import { ServiceClass, ServiceInstance } from "../../../types";
-import { Signal } from "../../Signal";
+import { Component, Signal } from "@mini/core";
+import type { ServiceClass, ServiceInstance } from "@mini/core";
 
 export abstract class AbstractStorage {
   abstract signal: Signal<any>;
