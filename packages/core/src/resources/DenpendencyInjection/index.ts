@@ -3,6 +3,7 @@
  * Unified DI system using Application's static registry
  */
 export { Injector } from "./Injector";
+export { InjectionToken } from "./InjectionToken";
 export { Injectable } from "./decorators/Injectable";
 export { Inject } from "./decorators/Inject";
 export {

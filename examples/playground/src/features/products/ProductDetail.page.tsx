@@ -1,9 +1,8 @@
-import { Component, Mount, signal } from "@mini/core";
-import { Inject } from "@mini/core";
-import { Route, RouterService } from "@mini/router";
 import { ViewTransition, withViewTransition } from "@mini/common";
-import type { Product } from "./types";
+import { Component, Inject, Mount, signal } from "@mini/core";
+import { Route, RouterService } from "@mini/router";
 import { PRODUCTS } from "./constants";
+import type { Product } from "./types";
 
 @Route("/product/:id")
 export class ProductDetailPage extends Component {

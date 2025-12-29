@@ -19,8 +19,17 @@
   "dependencies": {
     "@mini/core": "*"
   },
+  "peerDependencies": {
+    "axios": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "axios": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "~22.7.4",
+    "axios": "^1.7.9",
     "tsup": "~8.5.1",
     "typescript": "~5.9.3",
     "vitest": "~4.0.9"

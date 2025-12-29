@@ -39,3 +39,6 @@ export const SUBSCRIPTIONS = Symbol("__mini_subs");
 
 /** Symbol for storing observables on DOM nodes */
 export const OBSERVABLES = Symbol("__mini_observables");
+
+/** Symbol for storing keyed elements cache for list reconciliation */
+export const KEYED_ELEMENTS = Symbol("__mini_keyed_elements");
