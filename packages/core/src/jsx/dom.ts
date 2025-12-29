@@ -7,6 +7,7 @@ import {
   COMPONENT_PLACEHOLDER,
   COMPONENT_INSTANCE,
   OBSERVABLES,
+  KEYED_ELEMENTS,
 } from "../constants";
 import { toObservable } from "../helpers";
 import { Signal } from "../resources/Signal";
@@ -326,42 +327,286 @@ export const appendChildren = (
       return;
     }
 
-    // CASO 4: Array - processar cada item
+    // CASO 4: Array - processar cada item COM RECONCILIAÇÃO POR KEY
     if (Array.isArray(val)) {
-      // Remover nodes antigos
-      currentNodes.forEach((node) => {
-        node.remove();
-      });
-      currentNodes = [];
+      // Inicializar cache de elementos com key se não existir
+      if (!(startMarker as any)[KEYED_ELEMENTS]) {
+        (startMarker as any)[KEYED_ELEMENTS] = new Map<
+          string | number,
+          { nodes: ChildNode[]; data: any }
+        >();
+      }
 
-      // Processar array
-      const fragment = document.createDocumentFragment();
+      const keyedCache = (startMarker as any)[KEYED_ELEMENTS] as Map<
+        string | number,
+        { nodes: ChildNode[]; data: any }
+      >;
+
+      // Criar maps para reconciliação
+      const newKeys = new Set<string | number>();
+      const newKeyedItems = new Map<string | number, any>();
+
+      // Identificar quais items têm keys
       val.forEach((item: any) => {
-        if (item instanceof Component) {
-          const renderResult = Application.render(item, undefined, {
-            parent: parentComponent,
-          });
-          renderResult.insertBefore(
-            endMarker.parentNode! as HTMLElement,
-            endMarker
-          );
-
-          // renderResult.getComponent()?.replaceChild(renderResult.getNodes());
-          currentNodes.push(...(renderResult.getNodes() as ChildNode[]));
-          renderResult.appendTo(fragment as any);
-          // return;
-        } else if (item instanceof Node) {
-          fragment.appendChild(item);
-          currentNodes.push(item as ChildNode);
-          // Renderizar placeholders dentro do Node
-          renderPlaceholdersInNode(item, parentComponent);
-        } else if (item != null && item !== false) {
-          const textNode = document.createTextNode(String(item ?? ""));
-          fragment.appendChild(textNode);
-          currentNodes.push(textNode);
+        if (item instanceof Node && (item as any).key != null) {
+          const key = (item as any).key;
+          newKeys.add(key);
+          newKeyedItems.set(key, item);
         }
       });
-      endMarker.parentNode?.insertBefore(fragment, endMarker);
+
+      // Se nenhum item tem key, usar comportamento antigo (sem cache)
+      if (newKeys.size === 0) {
+        // Remover nodes antigos
+        currentNodes.forEach((node) => {
+          node.remove();
+        });
+        currentNodes = [];
+
+        // Processar array
+        const fragment = document.createDocumentFragment();
+        val.forEach((item: any) => {
+          if (item instanceof Component) {
+            const renderResult = Application.render(item, undefined, {
+              parent: parentComponent,
+            });
+            renderResult.insertBefore(
+              endMarker.parentNode! as HTMLElement,
+              endMarker
+            );
+
+            currentNodes.push(...(renderResult.getNodes() as ChildNode[]));
+            renderResult.appendTo(fragment as any);
+          } else if (item instanceof Node) {
+            fragment.appendChild(item);
+            currentNodes.push(item as ChildNode);
+            renderPlaceholdersInNode(item, parentComponent);
+          } else if (item != null && item !== false) {
+            const textNode = document.createTextNode(String(item ?? ""));
+            fragment.appendChild(textNode);
+            currentNodes.push(textNode);
+          }
+        });
+        endMarker.parentNode?.insertBefore(fragment, endMarker);
+        return;
+      }
+
+      // RECONCILIAÇÃO EFICIENTE COM KEYS - MANTÉM ORDEM EXATA DO ARRAY
+
+      // 1. REMOVER elementos cujas keys não existem mais
+      const keysToRemove: (string | number)[] = [];
+      keyedCache.forEach((cached, key) => {
+        if (!newKeys.has(key)) {
+          keysToRemove.push(key);
+          // Remover do DOM
+          cached.nodes.forEach((node) => {
+            (node as any)[COMPONENT_INSTANCE]?.destroy();
+            node.remove();
+          });
+        }
+      });
+      keysToRemove.forEach((key) => keyedCache.delete(key));
+
+      // 2. PROCESSAR cada item NA ORDEM DO ARRAY
+      const newNodes: ChildNode[] = [];
+      let previousNode: ChildNode | null = null; // Último node processado
+
+      val.forEach((item: any, index: number) => {
+        if (item instanceof Node && (item as any).key != null) {
+          const key = (item as any).key;
+
+          // CASO 1: Key já existe - REUTILIZAR nodes do cache
+          if (keyedCache.has(key)) {
+            const cached = keyedCache.get(key)!;
+            const firstNode = cached.nodes[0];
+
+            // Calcular onde o node deveria estar
+            // Deve estar após o previousNode (ou após startMarker se for o primeiro)
+            const shouldBeAfter = previousNode || startMarker;
+            const isInCorrectPosition =
+              firstNode.previousSibling === shouldBeAfter;
+
+            // Se não está na posição correta, mover
+            if (!isInCorrectPosition) {
+              // Inserir após shouldBeAfter (que significa antes do nextSibling)
+              const insertBefore = shouldBeAfter.nextSibling;
+              cached.nodes.forEach((node) => {
+                endMarker.parentNode?.insertBefore(node, insertBefore);
+              });
+            }
+
+            // Atualizar referência para o último node deste item
+            previousNode = cached.nodes[cached.nodes.length - 1];
+            newNodes.push(...cached.nodes);
+          }
+          // CASO 2: Key nova - CRIAR elemento
+          else {
+            const fragment = document.createDocumentFragment();
+            let nodesToAdd: ChildNode[] = [];
+
+            if (item instanceof Component) {
+              const renderResult = Application.render(item, undefined, {
+                parent: parentComponent,
+              });
+              const nodes = renderResult.getNodes() as ChildNode[];
+              renderResult.appendTo(fragment as any);
+              nodesToAdd = nodes;
+
+              // Armazenar no cache
+              keyedCache.set(key, { nodes: nodes, data: item });
+            } else {
+              fragment.appendChild(item);
+              nodesToAdd = [item as ChildNode];
+              renderPlaceholdersInNode(item, parentComponent);
+
+              // Armazenar no cache
+              keyedCache.set(key, { nodes: [item as ChildNode], data: item });
+            }
+
+            // Inserir após previousNode (ou após startMarker se for o primeiro)
+            const shouldBeAfter = previousNode || startMarker;
+            const insertBefore = shouldBeAfter.nextSibling;
+            endMarker.parentNode?.insertBefore(fragment, insertBefore);
+
+            // Atualizar referência
+            previousNode = nodesToAdd[nodesToAdd.length - 1];
+            newNodes.push(...nodesToAdd);
+          }
+        } else {
+          // Item sem key - criar sempre
+          const fragment = document.createDocumentFragment();
+          let nodesToAdd: ChildNode[] = [];
+
+          if (item instanceof Component) {
+            const renderResult = Application.render(item, undefined, {
+              parent: parentComponent,
+            });
+            const nodes = renderResult.getNodes() as ChildNode[];
+            renderResult.appendTo(fragment as any);
+            nodesToAdd = nodes;
+          } else if (item instanceof Node) {
+            fragment.appendChild(item);
+            nodesToAdd = [item as ChildNode];
+            renderPlaceholdersInNode(item, parentComponent);
+          } else if (item != null && item !== false) {
+            const textNode = document.createTextNode(String(item ?? ""));
+            fragment.appendChild(textNode);
+            nodesToAdd = [textNode];
+          }
+
+          // Inserir após previousNode
+          if (nodesToAdd.length > 0) {
+            const shouldBeAfter = previousNode || startMarker;
+            const insertBefore = shouldBeAfter.nextSibling;
+            endMarker.parentNode?.insertBefore(fragment, insertBefore);
+            previousNode = nodesToAdd[nodesToAdd.length - 1];
+            newNodes.push(...nodesToAdd);
+          }
+        }
+      });
+
+      // 3. LIMPAR nodes órfãos e atualizar currentNodes
+      // Remover TODOS os nodes que não estão em newNodes
+      currentNodes.forEach((node) => {
+        if (!newNodes.includes(node)) {
+          (node as any)[COMPONENT_INSTANCE]?.destroy();
+          node.remove();
+        }
+      });
+
+      // 4. LIMPAR cache de keys que não estão mais sendo usadas
+      // Isso garante que se um item saiu do array, sua key é removida do cache
+      const activeKeys = new Set(
+        newNodes.map((node) => (node as any).key).filter((k) => k != null)
+      );
+      keyedCache.forEach((cached, key) => {
+        if (!activeKeys.has(key) && !newKeys.has(key)) {
+          // Remove do cache se não está ativa E não está no novo array
+          keyedCache.delete(key);
+        }
+      });
+
+      currentNodes = newNodes;
+
+      // 5. VERIFICAÇÃO FINAL: contar nodes REAIS no DOM entre os markers
+      const actualDOMNodes: ChildNode[] = [];
+      let node = startMarker.nextSibling;
+      while (node && node !== endMarker) {
+        actualDOMNodes.push(node);
+        node = node.nextSibling;
+      }
+
+      // Verificar se há descompasso entre o esperado e o real
+      const hasLengthMismatch = actualDOMNodes.length !== val.length;
+      const hasNodesMismatch = actualDOMNodes.length !== currentNodes.length;
+
+      if (hasLengthMismatch || hasNodesMismatch) {
+        console.warn(
+          `[MiniJS] Descompasso detectado: currentNodes=${
+            currentNodes.length
+          }, array=${val.length}. Forçando sincronização...
+          [MiniJS] Descompasso detectado!
+          \n- Array length: ${val.length}
+          \n- currentNodes: ${currentNodes.length}
+          \n- DOM real: ${actualDOMNodes.length}
+          \n- Keys no array: ${Array.from(newKeys).join(", ")}
+          \n- Keys no cache: ${Array.from(keyedCache.keys()).join(", ")}`
+        );
+        console.warn(
+          `[MiniJS] Descompasso detectado: currentNodes=${currentNodes.length}, array=${val.length}. Forçando sincronização...`
+        );
+
+        // Forçar reconstrução completa em caso de descompasso
+        currentNodes.forEach((node) => {
+          (node as any)[COMPONENT_INSTANCE]?.destroy();
+          node.remove();
+        });
+        keyedCache.clear();
+        currentNodes = [];
+
+        // Processar tudo novamente
+        const fragment = document.createDocumentFragment();
+        val.forEach((item: any) => {
+          if (item instanceof Node && (item as any).key != null) {
+            const key = (item as any).key;
+
+            if (item instanceof Component) {
+              const renderResult = Application.render(item, undefined, {
+                parent: parentComponent,
+              });
+              const nodes = renderResult.getNodes() as ChildNode[];
+              renderResult.appendTo(fragment as any);
+              keyedCache.set(key, { nodes: nodes, data: item });
+              currentNodes.push(...nodes);
+            } else {
+              fragment.appendChild(item);
+              renderPlaceholdersInNode(item, parentComponent);
+              keyedCache.set(key, { nodes: [item as ChildNode], data: item });
+              currentNodes.push(item as ChildNode);
+            }
+          } else {
+            // Item sem key
+            if (item instanceof Component) {
+              const renderResult = Application.render(item, undefined, {
+                parent: parentComponent,
+              });
+              const nodes = renderResult.getNodes() as ChildNode[];
+              renderResult.appendTo(fragment as any);
+              currentNodes.push(...nodes);
+            } else if (item instanceof Node) {
+              fragment.appendChild(item);
+              renderPlaceholdersInNode(item, parentComponent);
+              currentNodes.push(item as ChildNode);
+            } else if (item != null && item !== false) {
+              const textNode = document.createTextNode(String(item ?? ""));
+              fragment.appendChild(textNode);
+              currentNodes.push(textNode);
+            }
+          }
+        });
+        endMarker.parentNode?.insertBefore(fragment, endMarker);
+      }
+
       return;
     }
 

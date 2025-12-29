@@ -147,6 +147,11 @@ export function createElement(type: any, props: any, parent: any): Node {
     ? document.createElementNS("http://www.w3.org/2000/svg", type)
     : document.createElement(type);
 
+  // Store key on the element if provided (for list reconciliation)
+  if (props && props.key != null) {
+    (el as any).key = props.key;
+  }
+
   // Parent will be passed by applyProps when needed
   applyProps(el, props, parent);
   return el;

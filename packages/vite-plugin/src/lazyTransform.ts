@@ -203,7 +203,7 @@ function generateLazyComponent(info: LazyCallInfo): string {
   }
 
   // Generate renderLoading method
-  let renderLoadingMethod = "renderLoading() { return <div>Loading...</div>; }";
+  let renderLoadingMethod = "";
   if (info.loadingFn) {
     const body = info.loadingFn.body;
     let bodyCode: string;
@@ -220,8 +220,7 @@ function generateLazyComponent(info: LazyCallInfo): string {
   }
 
   // Generate renderError method
-  let renderErrorMethod =
-    "renderError(error: any) { return <div>Error loading component: {error.message}</div>; }";
+  let renderErrorMethod = "";
   if (info.errorFn) {
     const errorParams = info.errorFn.params
       .map((param: any) => generate(param).code)

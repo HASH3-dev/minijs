@@ -8,6 +8,7 @@ export class AppRouter extends Component {
         {() => [
           // Lazy-loaded contact page - will be transformed at build time
           Lazy("./features/playground/Playground.page#Playground"),
+          Lazy("./features/sui-orderbook#SUIOrderBook"),
           Lazy("./features/another/Another.page#AnotherScreen"),
           Lazy("./features/products/ProductList.page#ProductListPage"),
           Lazy("./features/products/ProductDetail.page#ProductDetailPage"),

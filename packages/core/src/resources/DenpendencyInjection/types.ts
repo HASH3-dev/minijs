@@ -1,4 +1,4 @@
-import { InjectionToken } from "../Provider/InjectionToken";
+import { InjectionToken } from "./InjectionToken";
 
 /**
  * Token type for dependency injection
