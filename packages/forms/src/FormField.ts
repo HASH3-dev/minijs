@@ -28,7 +28,6 @@ export class FormField {
   metadata: FieldMetadata;
 
   constructor(metadata: FieldMetadata, private _hostComponent: Component) {
-    console.log("FIELD CONSTRUCTOR", metadata.label);
     this.metadata = metadata;
     this._defaultValue = metadata.defaultValue;
     this._value$ = new Signal(metadata.defaultValue);
@@ -145,7 +144,7 @@ export class FormField {
       options?.validateOn || this.metadata.validateOn || FormTrigger.blur;
     const attrs: FormBindAttributes = {
       name: this.metadata.propertyKey,
-      value: this._value$.value,
+      value: this._value$,
       required: this.required,
     };
 
@@ -155,11 +154,12 @@ export class FormField {
     }
 
     // Add ref callback to apply mask
-    if (this.metadata.mask) {
-      (attrs as any).ref = (el: HTMLInputElement | null) => {
-        if (el && el !== this._currentElement) {
-          this._currentElement = el;
 
+    (attrs as any).ref = (el: HTMLInputElement | null) => {
+      if (el && el !== this._currentElement) {
+        this._currentElement = el;
+
+        if (this.metadata.mask) {
           // Initialize mask adapter if not exists
           if (!this._maskAdapter) {
             this._maskAdapter = new MaskAdapterInjected();
@@ -176,42 +176,55 @@ export class FormField {
             });
           }
         }
-      };
-    }
 
-    const changeValue = (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const value = this._maskAdapter
-        ? this._maskAdapter.getUnmaskedValue(target)
-        : target.value;
-      this.setValue(value);
-      return value;
-    };
+        const changeValue = (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const mask = this._maskAdapter;
 
-    // Add event handlers based on validation trigger
-    if (validateOn === FormTrigger.input || validateOn === FormTrigger.change) {
-      if (validateOn === FormTrigger.input) {
-        attrs.onInput = (e: Event) => {
-          changeValue(e);
+          if (mask) {
+            const unmaskedValue = mask.getUnmaskedValue(target);
+            const maskedValue = mask.getMaskedValue(target);
+            this.setValue(unmaskedValue);
+            target.value = maskedValue; // Keep masked display
+            return unmaskedValue;
+          }
+
+          const value = target.value;
+          this.setValue(value);
+          return value;
         };
-      } else {
-        attrs.onChange = (e: Event) => {
-          changeValue(e);
-        };
+
+        // Add event handlers based on validation trigger
+        if (
+          validateOn === FormTrigger.input ||
+          validateOn === FormTrigger.change
+        ) {
+          if (validateOn === FormTrigger.input) {
+            this._currentElement.addEventListener("input", (e: Event) => {
+              changeValue(e);
+              this.setTouched(true);
+            });
+          } else {
+            this._currentElement.addEventListener("change", (e: Event) => {
+              changeValue(e);
+              this.setTouched(true);
+            });
+          }
+        }
+
+        if (validateOn === FormTrigger.blur) {
+          this._currentElement.addEventListener("blur", (e: Event) => {
+            changeValue(e);
+            this.setTouched(true);
+          });
+        } else {
+          // Always mark as touched on blur
+          this._currentElement.addEventListener("blur", () => {
+            this.setTouched(true);
+          });
+        }
       }
-    }
-
-    if (validateOn === FormTrigger.blur) {
-      attrs.onBlur = (e: Event) => {
-        changeValue(e);
-        this.setTouched(true);
-      };
-    } else {
-      // Always mark as touched on blur
-      attrs.onBlur = () => {
-        this.setTouched(true);
-      };
-    }
+    };
 
     return attrs;
   }
