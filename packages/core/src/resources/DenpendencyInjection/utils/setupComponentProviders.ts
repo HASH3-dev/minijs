@@ -6,6 +6,7 @@ import { resolveExisting } from "./resolveExisting";
 
 /**
  * Setup component providers in Application registry
+ * Uses two-phase registration to handle factory dependencies
  */
 export function setupComponentProviders(
   component: any,
@@ -19,17 +20,15 @@ export function setupComponentProviders(
     (Application as any).componentProviders.set(component, providerMap);
   }
 
-  // Register each provider
+  // Phase 1: Register providers without factory dependencies
+  // This includes useValue, useClass, and useExisting
   for (const provider of providers) {
     const token = provider.provide;
-
-    // Create instance based on provider type
     let instance: any;
 
     if ("useValue" in provider) {
       instance = provider.useValue;
-    } else if ("useFactory" in provider && provider.useFactory) {
-      instance = provider.useFactory();
+      providerMap.set(token, instance);
     } else if ("useClass" in provider && provider.useClass) {
       try {
         // reuse instance
@@ -41,12 +40,28 @@ export function setupComponentProviders(
         // Link service to component for DI context
         instance[SERVICE_COMPONENT] = component;
       }
+      providerMap.set(token, instance);
     } else if ("useExisting" in provider) {
       // Resolve from parent or current
       instance = resolveExisting(component, provider.useExisting);
+      providerMap.set(token, instance);
     }
+  }
 
-    // Store in provider map
-    providerMap.set(token, instance);
+  // Phase 2: Register factory providers with dependencies
+  // At this point, all non-factory providers are already registered
+  for (const provider of providers) {
+    if ("useFactory" in provider && provider.useFactory) {
+      const token = provider.provide;
+
+      // Resolve dependencies if deps are specified
+      const deps = provider.deps || [];
+      const resolvedDeps = deps.map((depToken) =>
+        resolveExisting(component, depToken)
+      );
+
+      const instance = provider.useFactory(...resolvedDeps);
+      providerMap.set(token, instance);
+    }
   }
 }

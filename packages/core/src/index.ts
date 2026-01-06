@@ -51,7 +51,10 @@ export {
   Injector,
   validateDependencyGraph,
 } from "./resources/DenpendencyInjection";
-export { InjectionScope } from "./resources/DenpendencyInjection";
+export {
+  InjectionScope,
+  InjectionToken,
+} from "./resources/DenpendencyInjection";
 export type {
   Token,
   Provider as DIProvider,

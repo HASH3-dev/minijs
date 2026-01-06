@@ -304,7 +304,7 @@ export class Playground extends Component {
           </div>
 
           {/* Navigation Links */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Link to Product Gallery */}
             <div className="p-6 bg-linear-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl text-center">
               <h2 className="text-3xl font-bold text-white mb-3">
@@ -334,6 +334,38 @@ export class Playground extends Component {
                 className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
               >
                 Get in Touch →
+              </button>
+            </div>
+
+            {/* Link to Posts CRUD */}
+            <div className="p-6 bg-linear-to-r from-green-500 to-teal-500 rounded-2xl shadow-xl text-center">
+              <h2 className="text-3xl font-bold text-white mb-3">
+                📝 Posts CRUD
+              </h2>
+              <p className="text-white/90 mb-6">
+                Complete CRUD with HTTPService and Dependency Injection!
+              </p>
+              <button
+                onClick={() => this.router.push("/posts")}
+                className="px-8 py-4 bg-white text-green-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                Manage Posts →
+              </button>
+            </div>
+
+            {/* Link to Posts CRUD */}
+            <div className="p-6 bg-linear-to-r from-cyan-500 to-purple-500 rounded-2xl shadow-xl text-center">
+              <h2 className="text-3xl font-bold text-white mb-3">
+                📝 SUI Transactions Book
+              </h2>
+              <p className="text-white/90 mb-6">
+                A realtime table of SUI blockchain transactions
+              </p>
+              <button
+                onClick={() => this.router.push("/sui-orderbook")}
+                className="px-8 py-4 bg-white text-green-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                View Transactions →
               </button>
             </div>
           </div>
