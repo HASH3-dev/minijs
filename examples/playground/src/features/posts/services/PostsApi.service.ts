@@ -1,6 +1,6 @@
 import { Inject, Injectable, signal } from "@mini/core";
 import { HTTPService } from "@mini/common";
-import { exhaustMap, switchMap } from "rxjs";
+import { exhaustMap, switchMap, tap } from "rxjs";
 import type { Post, PostFormSchema } from "../types";
 
 /**
@@ -15,6 +15,7 @@ export class PostsApiService {
   private createPost$ = signal<PostFormSchema>();
   private updatePost$ = signal<{ id: number; data: PostFormSchema }>();
   private deletePost$ = signal<number>();
+  private mutationPosts$ = signal<void>();
 
   // Fluxos reativos que são ativados quando os signals mudam
   private createFlow$ = signal(
@@ -22,7 +23,8 @@ export class PostsApiService {
       exhaustMap((data) => {
         console.log("Criando post...", data);
         return this.httpService.post<Post>("/posts", { ...data, userId: 1 });
-      })
+      }),
+      tap(() => this.mutationPosts$.set())
     )
   );
 
@@ -30,22 +32,34 @@ export class PostsApiService {
     this.updatePost$.pipe(
       switchMap(({ id, data }) =>
         this.httpService.put<Post>(`/posts/${id}`, { ...data, userId: 1 })
-      )
+      ),
+      tap(() => this.mutationPosts$.set())
     )
   );
 
   private deleteFlow$ = signal(
     this.deletePost$.pipe(
-      switchMap((id) => this.httpService.delete<void>(`/posts/${id}`))
+      switchMap((id) => this.httpService.delete<void>(`/posts/${id}`)),
+      tap(() => this.mutationPosts$.set())
     )
+  );
+
+  private readFlow$ = signal(
+    this.mutationPosts$.pipe(switchMap(() => this.getPosts()))
   );
 
   /**
    * Busca todos os posts
    */
   getPosts() {
-    console.log("Buscando posts...");
     return this.httpService.get<Post[]>("/posts?_limit=10&order=desc");
+  }
+
+  /**
+   * Busca um post por ID
+   */
+  getPosts$() {
+    return this.readFlow$;
   }
 
   /**

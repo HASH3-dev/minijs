@@ -1,7 +1,8 @@
 import { Component, Inject, LoadData, Mount, signal } from "@mini/core";
 import { Link, Route } from "@mini/router";
-import { PostsApiService } from "./services/PostsApi.service";
+import { interval, tap } from "rxjs";
 import { PostCard } from "./components/PostCard/PostCard.component";
+import { PostsApiService } from "./services/PostsApi.service";
 import type { Post } from "./types";
 
 /**
@@ -15,28 +16,36 @@ export class PostsListPage extends Component {
 
   @Mount()
   onMount() {
-    this.loadPosts();
+    return interval(10000).pipe(tap(() => this.fetchPostsOnce()));
   }
 
+  @Mount()
+  onMount2() {
+    return this.api.getPosts$().pipe(
+      tap((result) => {
+        this.posts.set(result.data);
+      })
+    );
+  }
+
+  @Mount()
   @LoadData()
   async loadPosts() {
-    console.log(this.api);
-    try {
-      const result = await this.api.getPosts();
-      this.posts.set(result.data);
-    } catch (error) {
-      console.error("Erro ao carregar posts:", error);
-      throw error; // Re-throw para o LoadData capturar
-    }
+    return this.fetchPostsOnce();
   }
 
-  @LoadData()
+  private async fetchPostsOnce() {
+    const result = await this.api.getPosts();
+    this.posts.set(result.data);
+  }
+
+  // @LoadData()
   async handleDelete(id: number) {
     if (!confirm("Tem certeza que deseja deletar este post?")) return;
 
     await this.api.deletePost(id);
     // Remove o post da lista (aqui podemos usar .value porque não é no JSX)
-    this.posts.set(this.posts.value.filter((p) => p.id !== id));
+    // this.posts.set(this.posts.value.filter((p) => p.id !== id));
   }
 
   renderLoading() {
@@ -84,7 +93,6 @@ export class PostsListPage extends Component {
             <div className="space-y-4">
               {this.posts
                 .map((post) => {
-                  console.log(post);
                   return (
                     <PostCard
                       // key={post.id}
