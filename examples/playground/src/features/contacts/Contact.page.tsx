@@ -17,9 +17,9 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import { ContactFormComponent, ContactInfoCard } from "./components";
 import { takeUntil } from "rxjs";
 import { ContactRepository } from "../../repositories/contact";
+import { ContactFormComponent, ContactInfoCard } from "./components";
 
 export class ContactFormSchema {
   @IsString()
@@ -39,7 +39,7 @@ export class ContactFormSchema {
   @IsPhoneNumber("US")
   @InputLabel("Phone")
   @InputType("tel")
-  @InputMask("(00) 00000-0000")
+  @InputMask("(000) 0000-0000")
   phone = "";
 
   @IsString()

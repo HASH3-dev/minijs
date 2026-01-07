@@ -70,7 +70,7 @@ export class FetchHttpAdapter implements HttpAdapter {
           } catch (error) {
             // If json parsing fails, try text if method exists
             if (typeof response.text === "function") {
-              responseData = (await response.text()) as any;
+              responseData = (await response.text().catch(() => "")) as any;
             } else {
               // Fallback for mocked responses
               responseData = null as any;
@@ -115,7 +115,10 @@ export class FetchHttpAdapter implements HttpAdapter {
       };
     });
 
-    return new Signal(observable);
+    const s = new Signal<Result<T>>();
+    observable.subscribe(s);
+
+    return s;
   }
 
   /**

@@ -61,7 +61,6 @@ export class AutoForm extends Component<AutoFormProps> {
             >
               {field.errors$.map((error, idx) => (
                 <p
-                  key={idx}
                   style={{
                     color: "red",
                     fontSize: "0.875rem",

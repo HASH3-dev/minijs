@@ -2,6 +2,7 @@ import {
   distinct,
   EMPTY,
   filter,
+  firstValueFrom,
   from,
   map,
   mergeMap,
@@ -9,7 +10,9 @@ import {
   of,
   ReplaySubject,
   startWith,
+  Subscription,
   switchMap,
+  tap,
 } from "rxjs";
 import { DeepRequired } from "../../types";
 import { isIterable } from "../../utils/isIterable";
@@ -44,10 +47,11 @@ export class Signal<
     }
 
     if (value instanceof Observable) {
-      value.subscribe(this);
+      const sub = value.subscribe(this);
       if (value instanceof Signal) {
         this._initialized = value.isInitialized();
       }
+      this.bindWithUnsubscribe(this, sub);
     } else if (value !== undefined) {
       this.next(value as R);
       this._initialized = true;
@@ -74,11 +78,13 @@ export class Signal<
     this._initialized = true;
 
     if (value instanceof Observable) {
-      value.subscribe({
+      const sub = value.subscribe({
         next: (resolvedValue) => super.next(resolvedValue),
         error: (err) => super.error(err),
         complete: () => super.complete(),
       });
+
+      this.bindWithUnsubscribe(this, sub);
       return;
     }
     if (isPromise(value)) {
@@ -135,7 +141,7 @@ export class Signal<
       distinct((e) => JSON.stringify(e))
     ).subscribe(s as any);
 
-    s.finally(() => sub.unsubscribe());
+    this.bindWithUnsubscribe(s, sub);
 
     return s;
   }
@@ -172,7 +178,7 @@ export class Signal<
       })
     ).subscribe(s);
 
-    s.finally(() => sub.unsubscribe());
+    this.bindWithUnsubscribe(s, sub);
 
     return s;
   }
@@ -200,22 +206,22 @@ export class Signal<
    */
   map<U, J = UnwrapIterable<R>>(fn: (value: J, index: number) => U): Signal<U> {
     const s = new Signal<U>();
+    let originalValue: R | undefined;
 
     const sub = this.pipe(
+      tap((e: R) => (originalValue = e)),
       map((e) => iterable(e).map(fn as any)),
       mergeMap((e) => Promise.all(e)),
       map((e) => {
         // If the original value was not an array, return the first element
-        if (!(isIterable(this._value) && typeof this._value !== "string")) {
+        if (!(isIterable(originalValue) && typeof originalValue !== "string")) {
           return e[0] as any;
         }
         return e as any;
       })
     ).subscribe(s as any);
 
-    s.finally(() => {
-      sub.unsubscribe();
-    });
+    this.bindWithUnsubscribe(s, sub);
 
     return s;
   }
@@ -255,7 +261,7 @@ export class Signal<
       map((e) => iterable(e).reduce(fn as any, initialValue))
     ).subscribe(s as any);
 
-    s.finally(() => sub.unsubscribe());
+    this.bindWithUnsubscribe(s, sub);
 
     return s;
   }
@@ -284,20 +290,22 @@ export class Signal<
    */
   filter<J = UnwrapIterable<R>>(fn: (value: J) => boolean): Signal<R> {
     const s = new Signal<R>();
+    let originalValue: R | undefined;
 
     const sub = this.pipe(
+      tap((e: R) => (originalValue = e)),
       map((e) => iterable(e).filter(fn as any)),
       mergeMap((e) => Promise.all(e)),
       map((e) => {
         // If the original value was not an array, return the first element
-        if (!(isIterable(this._value) && typeof this._value !== "string")) {
+        if (!(isIterable(originalValue) && typeof originalValue !== "string")) {
           return e[0] as any;
         }
         return e as any;
       })
     ).subscribe(s as any);
 
-    s.finally(() => sub.unsubscribe());
+    this.bindWithUnsubscribe(s, sub);
 
     return s;
   }
@@ -333,7 +341,7 @@ export class Signal<
       s as any
     );
 
-    s.finally(() => sub.unsubscribe());
+    this.bindWithUnsubscribe(s, sub);
 
     return s;
   }
@@ -386,17 +394,17 @@ export class Signal<
       })
     ).subscribe(s as any);
 
-    s.finally(() => sub.unsubscribe());
+    this.bindWithUnsubscribe(s, sub);
 
     return s as Signal<R> | Signal<K>;
   }
 
   /**
-   * Takes a function that returns a new observable and emits the value of that observable when the original signal emits a value.
+   * Takes a function that returns a Promise and emits the value of that promise when the original signal emits a value.
    * The function is called with the value of the original signal as an argument.
    * @template T The type of the value emitted by the new signal.
    * @param fn The function to call with the value of the original signal as an argument.
-   * @returns A new signal that emits the value of the new observable.
+   * @returns A Promise that emits the value of the new observable.
    * @example
    * const signal = new Signal(1);
    * signal.then((value) => console.log(value)); // output: 2
@@ -408,16 +416,17 @@ export class Signal<
    * }, 1000)
    * const value = await signal; // output: 2 after 1 second
    */
-  then<T>(fn: (value: R) => T): Signal<T> {
-    const s = new Signal<T>();
-
-    this.subscribe({
-      next: (val) => s.next(fn(val) as UnwrapObservable<T>),
-      error: (err) => s.error(err),
-      complete: () => s.complete(),
-    });
-
-    return s;
+  then<TResult1 = R, TResult2 = never>(
+    onfulfilled?:
+      | ((value: R) => TResult1 | PromiseLike<TResult1>)
+      | undefined
+      | null,
+    onrejected?:
+      | ((reason: any) => TResult2 | PromiseLike<TResult2>)
+      | undefined
+      | null
+  ): Promise<TResult1 | TResult2> {
+    return firstValueFrom(this).then(onfulfilled, onrejected);
   }
 
   /**
@@ -425,7 +434,7 @@ export class Signal<
    * The function is called with the error as an argument.
    * @template U The type of the value emitted by the new signal.
    * @param fn The function to call with the error as an argument.
-   * @returns A new signal that emits the value of the new observable.
+   * @returns A Promise that emits the value of the new observable.
    * @example
    * const signal = new Signal<number>(1);
    * signal
@@ -434,44 +443,44 @@ export class Signal<
    *  })
    *  .catch((err) => {
    *    console.error(err);
-   *    return of(2);
+   *    return 2;
    *  })
-   *  .subscribe((value) => console.log(value)); // output: 2
+   *  // output: 2
    */
-  catch<U>(fn: (value: any) => U): Signal<U> {
-    const s = new Signal<U>();
-
-    this.subscribe({
-      next: (val) => s.next(val as UnwrapObservable<U>),
-      error: (err) => s.next(fn(err) as UnwrapObservable<U>),
-      complete: () => s.complete(),
-    });
-
-    return s;
+  catch<U>(fn: (value: any) => U): Promise<U | R> {
+    return firstValueFrom(this).catch(fn);
   }
 
   /**
    * Subscribes to the completion of the signal and calls the provided function when completed.
    * The function is called after the signal has completed (either normally or with an error).
    * @param fn The function to call when the signal completes.
-   * @returns A new signal that emits the value of the new observable.
+   * @returns A Promise that emits the value of the new observable.
    * @example
    * const signal = new Signal<number>(1);
    * signal
-   *  .finally(() => console.log('Completed'))
-   *  .subscribe((value) => console.log(value)); // output: Completed, 1
+   *  .finally(() => console.log('Completed'));
+   *  // output: Completed, 1
    */
-  finally<R>(fn: () => any): Signal<R> {
-    const s = new Signal<R>();
-    this.subscribe({
-      next: (val) => s.next(val as UnwrapObservable<R>),
-      error: (err) => s.error(err as UnwrapObservable<R>),
-      complete: () => {
-        s.complete();
-        fn() as UnwrapObservable<R>;
-      },
-    });
+  finally(fn: () => any): Promise<R> {
+    return firstValueFrom(this).finally(fn);
+  }
 
-    return s;
+  private bindWithUnsubscribe<U, J = UnwrapIterable<R>>(
+    s: Signal<U, J>,
+    sub: Subscription
+  ) {
+    const originalComplete = s.complete.bind(s);
+    const originalError = s.error.bind(s);
+
+    s.complete = () => {
+      sub.unsubscribe();
+      originalComplete();
+    };
+
+    s.error = (err) => {
+      sub.unsubscribe();
+      originalError(err);
+    };
   }
 }

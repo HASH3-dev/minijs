@@ -1,21 +1,5 @@
 ```tsx
 
-const HTTPConfig = new InjectorToken<HTTPConfigType>('HTTPConfig');
-
-@UseProviders([{
-  provide: HTTPConfig,
-  useValue: { baseURL: 'https://api.example.com' }
-}, {
-  provide: HTTPService,
-  useFactory: (config) => new HTTPService(new AxiosHttpAdapter(config)),
-  deps: [HTTPConfig]
-}])
-export class App extends Component {
-  render() {
-    return <SignupForm />;
-  }
-}
-
 
 @Injectable()
 export class ApiService {
@@ -32,6 +16,24 @@ export class ApiService {
   }
 }
 
+
+const HTTPConfig = new InjectorToken<HTTPConfigType>('HTTPConfig');
+
+@UseProviders([{
+    provide: HTTPConfig,
+    useValue: { baseURL: 'https://api.example.com' }
+  }, {
+    provide: HTTPService,
+    useFactory: (config) => new HTTPService(new AxiosHttpAdapter(config)),
+    deps: [HTTPConfig]
+  },
+  ApiService
+])
+export class App extends Component {
+  render() {
+    return <SignupForm />;
+  }
+}
 
 export class SignupForm extends Component {
   form = new FormController(SignupFormSchema, {

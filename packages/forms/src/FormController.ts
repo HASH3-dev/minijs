@@ -30,7 +30,6 @@ export class FormController<T = any> {
     options: FormControllerOptions = {},
     hostComponent: Component
   ) {
-    console.log("FORM CONSTRUCTOR");
     this._schemaClass = schemaClass;
     this._hostComponent = hostComponent;
     this._options = {
@@ -61,7 +60,6 @@ export class FormController<T = any> {
    */
   private _initializeFields() {
     const fieldsMetadata = getFieldsMetadata(this._schemaClass);
-    console.log("INICIALIZANDO FORM");
     for (const [fieldName, metadata] of fieldsMetadata) {
       const field = new FormField(metadata, this._hostComponent);
       this._fields.set(fieldName, field);

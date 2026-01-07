@@ -1,5 +1,6 @@
 import { PARENT_COMPONENT } from "../../../constants";
 import { Application } from "../../../Application";
+import { InjectionToken } from "../InjectionToken";
 
 /**
  * Resolve existing token from component tree
@@ -15,7 +16,11 @@ export function resolveExisting(component: any, token: any): any {
     current = current[PARENT_COMPONENT];
   }
 
-  throw new Error(
-    `[DI] Cannot resolve useExisting: ${token.name || String(token)}`
-  );
+  // Create a better error message for InjectionToken
+  const tokenName =
+    token instanceof InjectionToken
+      ? token.description
+      : token.name || String(token);
+
+  throw new Error(`[DI] Cannot resolve useExisting: ${tokenName}`);
 }

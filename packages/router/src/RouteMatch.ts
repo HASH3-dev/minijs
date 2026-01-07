@@ -28,7 +28,7 @@ export function parsePattern(pattern: string): {
     /:([a-zA-Z_][a-zA-Z0-9_]*)/g,
     (_, paramName) => {
       paramNames.push(paramName);
-      return "([^/]+)";
+      return "([^/]+?)";
     }
   );
 
