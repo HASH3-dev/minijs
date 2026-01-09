@@ -9,6 +9,7 @@ import {
   SUBSCRIPTIONS,
   OBSERVABLES,
   COMPONENT_INSTANCE,
+  COMPONENT_PLACEHOLDER,
 } from "../../../constants";
 
 /**
@@ -50,8 +51,9 @@ export class ObservableChildStrategy implements ChildRenderStrategy {
     }
 
     // DOM: Subscribe and manage reactive updates
-    if (parent instanceof HTMLElement) {
-      this.subscribeAndRender(parent, observable, context, renderer);
+    // Accept both HTMLElement and DocumentFragment (for nested Observables)
+    if (parent instanceof HTMLElement || parent instanceof DocumentFragment) {
+      this.subscribeAndRender(parent as any, observable, context, renderer);
       return;
     }
 
@@ -131,14 +133,15 @@ export class ObservableChildStrategy implements ChildRenderStrategy {
       }
 
       // DEFAULT: Replace with new content (for non-arrays)
-      this.cleanupNodes(currentNodes);
-      currentNodes.length = 0;
-
       // For non-arrays: handle inline like V1 (can't delegate to renderer)
       // Because strategies use appendChild, not insertBefore(endMarker)
 
       // CASE: Component - render it
       if (val instanceof Component) {
+        // Components need proper cleanup (destroy + remove)
+        this.cleanupNodes(currentNodes);
+        currentNodes.length = 0;
+
         const renderResult = Application.render(val as any, undefined, {
           parent: context.component as any,
         });
@@ -148,19 +151,58 @@ export class ObservableChildStrategy implements ChildRenderStrategy {
         );
         currentNodes.push(...(renderResult.getNodes()! as ChildNode[]));
       }
-      // CASE: Node - insert it
+      // CASE: Node - insert it (just remove old nodes, don't destroy)
       else if (val instanceof Node) {
+        // Nodes may contain nested Observables - just remove, don't destroy
+        currentNodes.forEach((node) => node.remove());
+        currentNodes.length = 0;
+
         if (val instanceof DocumentFragment) {
           const children = Array.from(val.childNodes);
           endMarker.parentNode?.insertBefore(val, endMarker);
           currentNodes.push(...children);
+
+          // IMPORTANT: Render nested Observables inside fragment children
+          children.forEach((child) => {
+            if (child instanceof Element) {
+              this.renderNestedObservables(child, context, renderer);
+            }
+          });
         } else {
           endMarker.parentNode?.insertBefore(val, endMarker);
           currentNodes.push(val as ChildNode);
+
+          // IMPORTANT: Render nested Observables inside the node
+          if (val instanceof Element) {
+            this.renderNestedObservables(val, context, renderer);
+          }
         }
+      }
+      // CASE: Nested Observable - delegate to renderer
+      else if (isObservable(val)) {
+        // Clean old nodes
+        currentNodes.forEach((node) => node.remove());
+        currentNodes.length = 0;
+
+        // Use DocumentFragment - ultra lightweight, no DOM overhead
+        const fragment = document.createDocumentFragment();
+
+        // Delegate to renderer - creates markers inside fragment
+        renderer.render(fragment as any, val, context);
+
+        // Insert all fragment nodes before endMarker
+        const nodes = Array.from(fragment.childNodes);
+        nodes.forEach((node) => {
+          endMarker.parentNode?.insertBefore(node, endMarker);
+        });
+        currentNodes.push(...(nodes as ChildNode[]));
       }
       // CASE: Default - treat as string
       else {
+        // Just remove old nodes
+        currentNodes.forEach((node) => node.remove());
+        currentNodes.length = 0;
+
         const textNode = document.createTextNode(String(val));
         endMarker.parentNode?.insertBefore(textNode, endMarker);
         currentNodes.push(textNode);
@@ -198,6 +240,56 @@ export class ObservableChildStrategy implements ChildRenderStrategy {
     nodes.forEach((node) => {
       (node as any)[COMPONENT_INSTANCE]?.destroy();
       node.remove();
+    });
+  }
+
+  /**
+   * Render component placeholders found inside an Element
+   * This is CRITICAL for nested Observables that return Nodes with Components!
+   */
+  private renderNestedObservables(
+    element: Element,
+    context: RenderContext,
+    renderer: IChildrenRenderer
+  ): void {
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_COMMENT,
+      null
+    );
+
+    const placeholdersToRender: Array<{
+      placeholder: Comment;
+      component: Component;
+    }> = [];
+
+    // Collect all component placeholders
+    let node = walker.nextNode();
+    while (node) {
+      const comment = node as Comment;
+      const component = (comment as any)[COMPONENT_PLACEHOLDER];
+
+      if (component instanceof Component) {
+        placeholdersToRender.push({ placeholder: comment, component });
+      }
+
+      node = walker.nextNode();
+    }
+
+    // Render all collected placeholders
+    placeholdersToRender.forEach(({ placeholder, component }) => {
+      const renderResult = Application.render(component as any, undefined, {
+        parent: context.component as any,
+      });
+
+      // Insert rendered nodes before the placeholder
+      renderResult.insertBefore(
+        placeholder.parentNode! as HTMLElement,
+        placeholder
+      );
+
+      // Remove the placeholder comment
+      placeholder.remove();
     });
   }
 
