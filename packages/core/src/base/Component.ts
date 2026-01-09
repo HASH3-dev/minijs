@@ -7,7 +7,7 @@ import {
   PARENT_COMPONENT,
   RENDER_STATE,
 } from "../constants";
-import { createElement } from "../jsx";
+import { createElement } from "../jsx-v2";
 import {
   GET_PARENT_INJECTOR,
   INJECTOR_TOKEN,
@@ -23,7 +23,7 @@ export interface RenderStateValues {
   label?: string | symbol;
 }
 
-export interface ICompomponet {
+export interface IComponent {
   [key: string | symbol]: any;
 }
 
@@ -36,7 +36,7 @@ export interface ICompomponet {
  */
 export abstract class Component<P extends Record<string, any> = {}>
   extends CleanableComponent
-  implements ICompomponet
+  implements IComponent
 {
   props!: Readonly<P & { slot?: string }>;
   children?: any;

@@ -3,3 +3,10 @@
  */
 
 export { isClass } from "./isClass";
+export {
+  debugLog,
+  debugWarn,
+  debugError,
+  enableDebug,
+  disableDebug,
+} from "./debug";
