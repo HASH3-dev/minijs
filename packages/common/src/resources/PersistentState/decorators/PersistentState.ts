@@ -13,10 +13,19 @@ export function PersistentSate(
 
     Object.defineProperty(target, propertyKey, {
       get(this: any) {
-        if (!instantiate) {
+        const storageInstanceKey = Symbol.for(
+          `__mini_persistent_state_${String(propertyKey)}`
+        );
+
+        if (!this[storageInstanceKey]) {
+          console.log("[PersistentState] Linking storage", {
+            propertyKey,
+            storage,
+            target,
+          });
           (storage as AbstractStorage).link(propertyKey, this);
           (storage as AbstractStorage).sync();
-          instantiate = true;
+          this[storageInstanceKey] = true;
         }
 
         return (storage as AbstractStorage)?.signal;
