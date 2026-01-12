@@ -5,8 +5,6 @@ export function PersistentSate(
   storage: AbstractStorage | { new (): AbstractStorage }
 ): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
-    let instantiate = false;
-
     if (typeof storage === "function") {
       storage = new storage();
     }
@@ -18,11 +16,6 @@ export function PersistentSate(
         );
 
         if (!this[storageInstanceKey]) {
-          console.log("[PersistentState] Linking storage", {
-            propertyKey,
-            storage,
-            target,
-          });
           (storage as AbstractStorage).link(propertyKey, this);
           (storage as AbstractStorage).sync();
           this[storageInstanceKey] = true;
