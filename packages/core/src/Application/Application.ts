@@ -1,6 +1,6 @@
 import { Observable, Subject, Subscription } from "rxjs";
 import { mergeMap, takeUntil } from "rxjs/operators";
-import { Component } from "./base/Component";
+import { Component } from "../base/Component";
 import {
   CHILDREN_HIERARCHY,
   COMPONENT_INSTANCE,
@@ -11,11 +11,11 @@ import {
   OBSERVABLES,
   PARENT_COMPONENT,
   SUBSCRIPTIONS,
-} from "./constants";
-import { getChildSlots } from "./resources/Child";
-import { validateDependencyGraph } from "./resources/DenpendencyInjection";
-import { toObservable } from "./helpers";
-import { RenderResult } from "./RenderResult";
+} from "../constants";
+import { getChildSlots } from "../resources/Child";
+import { validateDependencyGraph } from "../resources/DenpendencyInjection";
+import { toObservable } from "../helpers";
+import { RenderResult } from "../RenderResult";
 
 /**
  * Options for rendering components

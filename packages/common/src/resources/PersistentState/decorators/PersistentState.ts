@@ -5,18 +5,20 @@ export function PersistentSate(
   storage: AbstractStorage | { new (): AbstractStorage }
 ): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
-    let instantiate = false;
-
     if (typeof storage === "function") {
       storage = new storage();
     }
 
     Object.defineProperty(target, propertyKey, {
       get(this: any) {
-        if (!instantiate) {
+        const storageInstanceKey = Symbol.for(
+          `__mini_persistent_state_${String(propertyKey)}`
+        );
+
+        if (!this[storageInstanceKey]) {
           (storage as AbstractStorage).link(propertyKey, this);
           (storage as AbstractStorage).sync();
-          instantiate = true;
+          this[storageInstanceKey] = true;
         }
 
         return (storage as AbstractStorage)?.signal;
